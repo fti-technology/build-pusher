@@ -1,0 +1,52 @@
+﻿{
+    "BuildServer": "http://someserver:8080/tfs/ProjectCollection",
+    "StagingFileShare": "D:\\StagingShare\\Builds",
+    "RunBuildUpdate": true,
+    "RunMirrorCopy": true,
+    "RunFtpUpload": true,
+    "RunHttpMirror": true,
+    "UpdateFrequencyInMinutes": 3,
+    "MirrorLogRetention": 100,
+    "MirrorRetryNumber": 5,
+    "RESTAPIVER": "V1",
+    "Mirror": [
+        "\\\\localhost\\TESTSHARE\\Builds2",
+        "\\\\localhost\\TESTSHARE\\Builds3"
+    ],
+    "FTPLocations": [
+
+        {
+            "FtpUrl": "ftp-myhost.com",
+            "FtpUser": "ftpUserName",
+            "FtpPassWord": "myFtpP@ssword",
+            "FtpProxy": "myProxy.com",
+            "FtpPort": "8080",
+            "FTPDirectory": "/shared_drive/Builds/"
+        },
+        {
+            "FtpUrl": "someInternalFTPMachine",
+            "FtpUser": "ftpupload",
+            "FtpPassWord": "myFtpP@ssword",
+            "FtpProxy": "",
+            "FtpPort": "",
+            "FTPDirectory": "/Builds"
+        }
+    ],
+    "HTTPShares": [
+        "http://fti-file-rest-server/Api"
+    ],
+    "BuildsToWatch": [
+        {
+            "Project": "ProjectName",
+            "Branch": "BranchName",
+            "Retention": "5"
+        },
+        {
+            "Project": "ProjectName",
+            "Branch": "BranchName2",
+            "Retention": "0",
+            "FilterInclude": [ "Hotfix", "Service Pack", "Only Includ path that end with the filters" ]
+        }
+    ]
+}
+   
