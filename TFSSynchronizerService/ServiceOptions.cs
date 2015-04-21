@@ -46,13 +46,13 @@ namespace FTIPusher
             get { return _logger; }
         }
 
-        public ServiceCoreLogic(Logger logger)
+        public ServiceCoreLogic(Logger logger, ServiceOptionsRoot serviceOptions)
         {
             _logger = logger;
             StopUpdates = false;
             HasStopped = false;
             _dataBaseLogDirPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments), _databaseSubDir);
-            _tfsOps = new TfsOps(_dataBaseLogDirPath);
+            _tfsOps = new TfsOps(_dataBaseLogDirPath, serviceOptions.BuildServer);
             _logger.Info("DATABASE PATH SET: {0}", _dataBaseLogDirPath);
             _httpHelper = new HTTPHelper(this);
         }
@@ -71,10 +71,21 @@ namespace FTIPusher
             // Use a GUID for log parsing - since this application run in parallel, the log entries are not in order
             var guid = Guid.NewGuid();
             _logger.Info("$$$ {0} $$$ Core logic START", guid);
+            _logger.Info("********************************************************************");
+            _logger.Info("OPTIONS SET: ", guid);
+            _logger.Info("RunBuildUpdate: {0}", serviceOptions.RunBuildUpdate);
+            _logger.Info("RunFtpUpload: {0}", serviceOptions.RunFtpUpload);
+            _logger.Info("RunMirrorCopy: {0}", serviceOptions.RunMirrorCopy);
+            _logger.Info("RunHttpMirror: {0}", serviceOptions.RunHttpMirror);
+            _logger.Info("********************************************************************");
+            
 
             // Compute all build queries up front....
             if ((serviceOptions.RunBuildUpdate) || (serviceOptions.RunFtpUpload))
             {
+                _logger.Info("********************************************************************");
+                _logger.Info("Computing build information");
+                _logger.Info("********************************************************************");
                 // Used the options file to query for the list of branches/projects to operate on
                 var branchList = _tfsOps.GetBranchList(serviceOptions.BuildsToWatch.ToList<IBuildsToWatch>());
                 

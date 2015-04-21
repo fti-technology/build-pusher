@@ -73,8 +73,18 @@ namespace BuildDataDriver.tools
         {
             if(!string.IsNullOrEmpty(tfsPath))
                 this._tfsUri = new Uri(tfsPath);
-            _teamProjectCollection =
+
+            try
+            {
+                Logger.Info("TFS Server Set: " + _tfsUri);
+                _teamProjectCollection =
                 TfsTeamProjectCollectionFactory.GetTeamProjectCollection(_tfsUri);
+            }
+            catch (Exception ex)
+            {
+                Logger.FatalException("TFS Server connection, failed, please check TFS path in config", ex);
+            }
+            
             BuildTarget.TargetBranch = DefTargetProject;   // defaults
             BuildTarget.TargetProject = DefTargetBranch;
 

@@ -81,7 +81,7 @@ namespace FTIPusher
         private async Task Poll()
         {
             eventLog1.WriteEntry("Service Poll logic");
-            serviceCoreLogic = new ServiceCoreLogic(Logger);
+            serviceCoreLogic = new ServiceCoreLogic(Logger, _readJsonConfigOptions);
             Logger.Info("Core Service Logic Created");
             CancellationToken cancellation = _cts.Token;
 

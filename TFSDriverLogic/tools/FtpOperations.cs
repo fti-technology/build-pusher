@@ -291,7 +291,7 @@ namespace BuildDataDriver.tools
                 HostName = _hostName,
                 UserName = _userName,
                 Password = _password,
-                Timeout = new TimeSpan(0,0,3,0)
+                Timeout = new TimeSpan(0,0,4,0)
             };
 
             if (!string.IsNullOrEmpty(_proxyHost))
