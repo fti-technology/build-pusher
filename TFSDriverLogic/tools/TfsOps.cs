@@ -126,7 +126,106 @@ namespace BuildDataDriver.tools
             return GetBuilds(dynamicSourceDetails);
         }
 
+        /// <summary>
+        /// Used to query for the last success build on a TFS project/branch.  Try to initially go back a week, but still grab last successful.
+        /// </summary>
+        /// <param name="TFSFullProjectPath"></param>
+        /// <param name="_tfsUri"></param>
+        /// <returns></returns>
+        public static List<IBuildDetail> GetLastBuildDetails(string TFSFullProjectPath, Uri _tfsUri)
+        {
+            List<IBuildDetail> buildDetails = new List<IBuildDetail>();;
+            var tfsTeamProjectCollection = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(_tfsUri);
+            var buildServer = (IBuildServer) tfsTeamProjectCollection.GetService(typeof (IBuildServer));
+            var dollarIndex = TFSFullProjectPath.IndexOf("$/", StringComparison.Ordinal);
+            if (dollarIndex != -1)
+            {
+
+                var subProject = TFSFullProjectPath.Substring(TFSFullProjectPath.LastIndexOf('/')).Replace("/", "");
+                string tmpStr = TFSFullProjectPath.Replace("$/", "");
+                string project = tmpStr.Substring(0, tmpStr.IndexOf("/", StringComparison.Ordinal));
+                   
+
+                foreach (var targetBuild in BuildTarget.TargetBuilds)
+                {
+                    try
+                    {
+                        string definition = string.Format("{0} {1}", subProject, targetBuild);
+                        var buildSpec = buildServer.CreateBuildDetailSpec(project, definition);
+                        buildSpec.MaxBuildsPerDefinition = 1;
+                        buildSpec.QueryOrder = BuildQueryOrder.FinishTimeDescending;
+                        buildSpec.InformationTypes = null;
+                        buildSpec.QueryDeletedOption = QueryDeletedOption.ExcludeDeleted;
+                        buildSpec.Status = BuildStatus.Succeeded;
+                        buildSpec.MinFinishTime = DateTime.Now.AddDays(-7);
+                        buildSpec.MaxFinishTime = DateTime.Now;
+                        var buildRecord = GetBuildRecord(buildServer, buildSpec);
+
+                        if (buildRecord != null)
+                        {
+                            buildDetails.Add(buildRecord);
+                        }
+                        else
+                        {
+                            // Try to increase the query
+                            buildSpec.MinFinishTime = DateTime.Now.AddDays(-60);
+                            buildRecord = GetBuildRecord(buildServer, buildSpec);
+                            if (buildRecord != null)
+                            {
+                                buildDetails.Add(buildRecord);
+                            }
+                        }
+
+//                        DownLoadFromDropPath(buildRecord, subProject);
+                    }
+                    catch (Exception exception)
+                    {
+                    }
+                }
+
+            }
+            
+            
+
+
+
+            return buildDetails;
+        }
+
+        public static void DownLoadFromDropPath(IBuildDetail buildRecord, string subProject)
+        {
+            if (buildRecord != null)
+            {
+                var intallationComponents = new Dictionary<string, KeyValuePair<string, string>>();
+                BuildUpDropPaths(buildRecord.DropLocation, subProject,
+                    out intallationComponents, buildRecord.BuildNumber, true);
+            }
+        }
+
+        private static IBuildDetail GetBuildRecord(IBuildServer buildServer, IBuildDetailSpec buildSpec)
+        {
+            var buildRecord = buildServer.QueryBuilds(buildSpec).Builds.FirstOrDefault();
+            return buildRecord;
+        }
+
+        //Static override
+        public static List<string> GetBranchList(List<IBuildsToWatch> buildsToWatch, Uri tfsPath)
+        {
+            return ListOfFilteredBranches(buildsToWatch, tfsPath);
+        }
+
         public List<string> GetBranchList(List<IBuildsToWatch> buildsToWatch)
+        {
+            return ListOfFilteredBranches(buildsToWatch,this._tfsUri);
+        }
+
+        /// <summary>
+        /// Internal use
+        /// </summary>
+        /// <param name="buildsToWatch"></param>
+        /// <param name="tfsPath"></param>
+        /// <returns></returns>
+        private static List<string> ListOfFilteredBranches(List<IBuildsToWatch> buildsToWatch, Uri tfsPath)
         {
             // populate a list of paths to query for based on a TfS Project and Branch
             List<string> paths = new List<string>();
@@ -141,11 +240,11 @@ namespace BuildDataDriver.tools
             }
 
             // Call to TFS to get the filtered list of target paths
-            var baseList = BuildDataDriver.tools.TfsOps.GetBranches(this._tfsUri);
+            var baseList = BuildDataDriver.tools.TfsOps.GetBranches(tfsPath);
             var filteredList = from xxx in baseList
-                               let itemName = xxx.Properties.RootItem.Item
-                               where paths.Any(path => itemName.StartsWith(path))
-                               select xxx.Properties.RootItem.Item;
+                let itemName = xxx.Properties.RootItem.Item
+                where paths.Any(path => itemName.StartsWith(path))
+                select xxx.Properties.RootItem.Item;
 
             var listOfFilteredBranches = filteredList.ToList();
             for (int i = listOfFilteredBranches.Count - 1; i >= 0; i--)
@@ -160,7 +259,6 @@ namespace BuildDataDriver.tools
                         listOfFilteredBranches.RemoveAt(i);
                     }
                 }
-
             }
             return listOfFilteredBranches;
         }
@@ -322,9 +420,11 @@ namespace BuildDataDriver.tools
 
                 if (!buildPackageInformation.BuildLinks.Contains(buildDefinition.LastGoodBuildUri))
                     buildPackageInformation.BuildLinks.Add(buildDefinition.LastGoodBuildUri);
-
+                
+                var tempVar = buildPackageInformation.InstallationComponents;
                 buildDropPaths = BuildUpDropPaths(dropLocation, dynamicSourceDetails.SubBranch,
-                    buildPackageInformation.InstallationComponents, myBuildDetail.BuildNumber);
+                    out tempVar, myBuildDetail.BuildNumber);
+                buildPackageInformation.InstallationComponents = tempVar;
 
                 BuildPackageDetail buildPackageDetail = new BuildPackageDetail()
                 {
@@ -351,8 +451,15 @@ namespace BuildDataDriver.tools
             }
         }
 
-        internal IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, Dictionary<string, KeyValuePair<string,string>> setupPackageList, string buildNumber)
+        internal IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch,
+            out Dictionary<string, KeyValuePair<string, string>> setupPackageList, string buildNumber)
         {
+            return BuildUpDropPaths(dropLoc, branch, out setupPackageList, buildNumber, true);
+        }
+
+        private static IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, out Dictionary<string, KeyValuePair<string,string>> setupPackageList, string buildNumber, bool internalCall)
+        {
+            Dictionary<string, KeyValuePair<string,string>> setupPackageListTemp = new Dictionary<string, KeyValuePair<string, string>>();
             List<string> componentsRawList = new List<string>();
             var temp = Directory.EnumerateFiles(dropLoc, "*.exe", SearchOption.AllDirectories);
             List<string>manifestBranchList = BuildTarget.Manifest.Select(manifest => manifest.Replace("{BRANCH}", branch)).ToList();
@@ -360,14 +467,15 @@ namespace BuildDataDriver.tools
             foreach (var file in temp)
             {
                 var fileName = Path.GetFileNameWithoutExtension(file).ToUpperInvariant();
-                foreach (var manifestItem in manifestBranchList.Where(manifestItem => fileName.ToUpperInvariant().StartsWith(manifestItem.ToUpperInvariant())).Where(manifestItem => !setupPackageList.ContainsKey(fileName)))
+                foreach (var manifestItem in manifestBranchList.Where(manifestItem => fileName.ToUpperInvariant().StartsWith(manifestItem.ToUpperInvariant())).Where(manifestItem => !setupPackageListTemp.ContainsKey(fileName)))
                 {
-                    setupPackageList.Add(fileName, new KeyValuePair<string, string>(buildNumber, file));
+                    setupPackageListTemp.Add(fileName, new KeyValuePair<string, string>(buildNumber, file));
                     componentsRawList.Add(file);
                     Logger.Info("Drop path added: {0} - for Branch: {1}, Build Number: {2}", file, branch, buildNumber);
                 }
             }
 
+            setupPackageList = setupPackageListTemp;
             return componentsRawList;
         }
 

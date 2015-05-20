@@ -128,76 +128,31 @@ namespace FTIPusher
             if (calculatedCount != expectedCount)
                 _logger.Error("Expected {0} builds to watch but only found {1}", expectedCount, calculatedCount);
 
-
             List<KeyValuePair<string,IDynamicSourceDetails>> buildUpdateManifest = new List<KeyValuePair<string, IDynamicSourceDetails>>();
 
-            // CORE LOGIC LOOP
-            Parallel.ForEach(buildQueryManifest, buildsToWatch =>
+            if (serviceOptions.RunBuildUpdate)
             {
+                LimitedConcurrencyLevelTaskScheduler lcts = new LimitedConcurrencyLevelTaskScheduler(4);
+                TaskFactory factory = new TaskFactory(lcts);
+                List<Task> tasks = new List<Task>();
 
-                _logger.Info("Watching Build: {0} - {1}", buildsToWatch.Key.Project, buildsToWatch.Key.Branch);
-
-                if (serviceOptions.RunBuildUpdate)
+                foreach (var buildUpdateItem in buildQueryManifest)
                 {
-                    try
-                    {
-                        var buildInformation = buildsToWatch.Value;
-                        if (buildInformation != null)
-                        {
-                            _logger.Info("Acquired build information from TFS server");
-                            var strPath = FileUtils.GetFullFormatedPathForBuild(serviceOptions.StagingFileShare,
-                                buildsToWatch.Key, buildInformation);
-                            var count = FileUtils.XCopyFilesParallel(strPath, buildInformation.InstallationComponents,_logger);
-                            var expectedCnt = buildInformation.InstallationComponents.Count;
-                            if (count != expectedCnt)
-                            {
-                                _logger.Error(
-                                    "ERROR: XCopy might have failed to copy all required components!  Expected: {0} - Copied {1}",
-                                    expectedCnt, count);
-                            }
+                    var currentTarget = buildUpdateItem;
+                    var buildInformation = currentTarget.Value;
 
-                            // Add this item to the manifest for easy process later down the line.
-                            buildUpdateManifest.Add(new KeyValuePair<string, IDynamicSourceDetails>(strPath, buildsToWatch.Key));
-
-                            var verNumber = buildInformation.GetDeploymentVersionNumber();
-                            if (!string.IsNullOrEmpty(buildInformation.GetDeploymentVersionNumber()))
-                                _tfsOps.SetDbDeployedStatus(buildsToWatch.Key.Project, buildsToWatch.Key.Branch,buildsToWatch.Key.SubBranch, verNumber, true);
-
-                            try
-                            {
-                                foreach (var file in Directory.GetFiles(strPath, "*.exe", SearchOption.TopDirectoryOnly))
-                                {
-                                    _tfsOps.UpdateCheckSum(buildsToWatch.Key.Project, buildsToWatch.Key.Branch, buildsToWatch.Key.SubBranch, verNumber, file);
-                                }
-                            }
-                            catch (Exception)
-                            {
-                                // ignored
-                            }
-                        }
-                        else
-                        {
-                            _logger.Info("No build information found from TFS server");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.InfoException("Exception Querying Build", ex);
-                    }
+                    Task t =
+                        factory.StartNew(
+                            () =>
+                                AcquirePackageFromDrop(serviceOptions, currentTarget, buildInformation, buildUpdateManifest),
+                            CancellationToken.None,
+                            TaskCreationOptions.LongRunning, lcts);
+                    tasks.Add(t);
                 }
-
-                ///////////////////////////////////////////////////////////
-                // Clean up
-                ///////////////////////////////////////////////////////////
-                try
-                {
-                    CleanUpCacheShare(serviceOptions, _logger, buildsToWatch.Key);
-                }
-                catch (Exception ex)
-                {
-                    _logger.InfoException("Exception Cleaning Cache Server", ex);
-                }
-            });
+                Task.WaitAll(tasks.ToArray());
+                _logger.Info("Completed Processing of FTP");
+                _logger.Info("RunFtpUpload completed");
+            }
 
             if (serviceOptions.RunFtpUpload)
             {
@@ -290,6 +245,56 @@ namespace FTIPusher
             _logger.Info("$$$ {0} $$$ Core logic END", guid);
 
             return true;
+        }
+
+        private void AcquirePackageFromDrop(ServiceOptionsRoot serviceOptions, KeyValuePair<IDynamicSourceDetails, BuildPackageInformation> buildsToWatch,
+            BuildPackageInformation buildInformation, List<KeyValuePair<string, IDynamicSourceDetails>> buildUpdateManifest)
+        {
+            _logger.Info("Acquired build information from TFS server");
+            var strPath = FileUtils.GetFullFormatedPathForBuild(serviceOptions.StagingFileShare,
+                buildsToWatch.Key, buildInformation);
+            var count = FileUtils.XCopyFilesParallel(strPath, buildInformation.InstallationComponents, _logger);
+            var expectedCnt = buildInformation.InstallationComponents.Count;
+            if (count != expectedCnt)
+            {
+                _logger.Error(
+                    "ERROR: XCopy might have failed to copy all required components!  Expected: {0} - Copied {1}",
+                    expectedCnt, count);
+            }
+
+            // Add this item to the manifest for easy process later down the line.
+            buildUpdateManifest.Add(new KeyValuePair<string, IDynamicSourceDetails>(strPath, buildsToWatch.Key));
+
+            var verNumber = buildInformation.GetDeploymentVersionNumber();
+            if (!string.IsNullOrEmpty(buildInformation.GetDeploymentVersionNumber()))
+                _tfsOps.SetDbDeployedStatus(buildsToWatch.Key.Project, buildsToWatch.Key.Branch, buildsToWatch.Key.SubBranch,
+                    verNumber, true);
+
+            try
+            {
+                foreach (var file in Directory.GetFiles(strPath, "*.exe", SearchOption.TopDirectoryOnly))
+                {
+                    _tfsOps.UpdateCheckSum(buildsToWatch.Key.Project, buildsToWatch.Key.Branch, buildsToWatch.Key.SubBranch,
+                        verNumber, file);
+                }
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+
+
+            ///////////////////////////////////////////////////////////
+            // Clean up
+            ///////////////////////////////////////////////////////////
+            try
+            {
+                CleanUpCacheShare(serviceOptions, _logger, buildsToWatch.Key);
+            }
+            catch (Exception ex)
+            {
+                _logger.InfoException("Exception Cleaning Cache Server", ex);
+            }
         }
 
         //private void CleanUpCacheShare(ServiceOptionsRoot serviceOptions, Logger logger, BuildsToWatch buildsToWatch)

@@ -54,20 +54,36 @@ namespace FTIPusher.Util
 
     public class ServiceOptions
     {
+        
         public static ServiceOptionsRoot ReadJsonConfigOptions(Logger logger)
         {
+            return ReadJsonConfigOptions(logger, null);
+        }
+
+        public static ServiceOptionsRoot ReadJsonConfigOptions(Logger logger, string optionsFileDirectory)
+        {
+            string location = null;
+
             try
             {
                 const string optionsFile = "FTIPusherServiceOptions.json";
-                var loc = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                logger.Info("Service Executable: {0}", loc);
-                var directory = Path.GetDirectoryName(loc);
-                loc = Path.Combine(directory, optionsFile);
-                logger.Info("Loading options from: {0}", loc);
-                if (File.Exists(loc))
+                if (string.IsNullOrEmpty(optionsFileDirectory))
+                {
+                    var loc = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                    logger.Info("Service Executable: {0}", loc);
+                    var directory = Path.GetDirectoryName(loc);
+                    location = Path.Combine(directory, optionsFile);
+                }
+                else
+                {
+                    location = Path.Combine(optionsFileDirectory, optionsFile);   
+                }
+
+                logger.Info("Loading options from: {0}", location);
+                if (File.Exists(location))
                 {
                     string jsonConfig;
-                    using (StreamReader r = new StreamReader(loc))
+                    using (StreamReader r = new StreamReader(location))
                     {
                         jsonConfig = r.ReadToEnd();
                     }

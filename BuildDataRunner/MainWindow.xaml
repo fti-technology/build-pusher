@@ -1,0 +1,35 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:Client="clr-namespace:Microsoft.TeamFoundation.Build.Client;assembly=Microsoft.TeamFoundation.Build.Client" mc:Ignorable="d" x:Class="BuildDataRunner.MainWindow"
+        Title="MainWindow" Height="350" Width="525" Loaded="Window_Loaded">
+    <Window.Resources>
+        <CollectionViewSource x:Key="iBuildDetailViewSource" d:DesignSource="{d:DesignInstance {x:Type Client:IBuildDetail}, CreateList=True}"/>
+    </Window.Resources>
+    <Grid>
+        <Grid Margin="10,10,0,0" VerticalAlignment="Stretch" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Stretch" DataContext="{StaticResource iBuildDetailViewSource}" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+
+                <TreeView x:Name="TreeViewBranches" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="{x:Type TreeViewItem}">
+                            <EventSetter Event="UIElement.MouseLeftButtonUp" Handler="treeViewItem_MouseLeftButtonUp"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+            <GridSplitter Grid.Row="0" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
+            <DataGrid Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ItemsSource="{Binding}"
+                      Grid.Row="0" IsReadOnly="True" />
+            
+        </Grid>
+    </Grid>
+</Window>

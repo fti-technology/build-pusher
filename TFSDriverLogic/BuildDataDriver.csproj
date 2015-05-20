@@ -163,6 +163,7 @@
     <Compile Include="tools\FtpOperations.cs" />
     <Compile Include="tools\RestUploadManager.cs" />
     <Compile Include="tools\TfsOps.cs" />
+    <Compile Include="Util\PackageAndOptionsInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="WinSCP.exe">

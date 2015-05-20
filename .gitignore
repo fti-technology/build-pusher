@@ -182,3 +182,7 @@ UpgradeLog*.htm
 # Microsoft Fakes
 FakesAssemblies/
 TFSSynchronizerService/FTIPusherServiceOptions.json
+BuildDataRunner/Properties/Settings.settings
+BuildDataRunner/Properties/Settings.Designer.cs
+BuildDataRunner/Properties/Resources.Designer.cs
+BuildDataRunner/Properties/DataSources/Microsoft.TeamFoundation.Build.Client.IBuildDetail.datasource

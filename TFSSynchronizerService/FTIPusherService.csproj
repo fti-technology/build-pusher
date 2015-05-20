@@ -13,7 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>b06e58d9</NuGetPackageImportStamp>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>\\pgp187-jmcfal01\TESTSHARE\Applications\FTIPusher\v1.2\</PublishUrl>
+    <PublishUrl>\\pgp187-jmcfal01\TESTSHARE\Applications\FTIPusher\v1.3\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Unc</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -189,7 +189,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServiceOptions.cs" />
     <Compile Include="Util\LimitedConcurrencyLevelTaskScheduler.cs" />
-    <Compile Include="Util\PackageAndOptionsInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
