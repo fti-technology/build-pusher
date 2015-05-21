@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BuildDataDriver.Data;
 using BuildDataDriver.Interfaces;
+using BuildDataDriver.Util;
 using Microsoft.TeamFoundation.Build.Client;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.VersionControl.Client;
@@ -192,14 +193,21 @@ namespace BuildDataDriver.tools
             return buildDetails;
         }
 
-        public static void DownLoadFromDropPath(IBuildDetail buildRecord, string subProject)
+        public static IEnumerable<string> DownLoadPathsFromDropPath(IEnumerable<IBuildDetail> buildRecords, string branch)
         {
-            if (buildRecord != null)
+            
+            List<string> dropPaths = new List<string>();
+            if (buildRecords != null)
             {
                 var intallationComponents = new Dictionary<string, KeyValuePair<string, string>>();
-                BuildUpDropPaths(buildRecord.DropLocation, subProject,
-                    out intallationComponents, buildRecord.BuildNumber, true);
+                foreach (var buildRecord in buildRecords)
+                {
+                    dropPaths.AddRange(BuildUpDropPaths(buildRecord.DropLocation, branch,
+                        ref intallationComponents, buildRecord.BuildNumber, true));
+                }
             }
+
+            return dropPaths;
         }
 
         private static IBuildDetail GetBuildRecord(IBuildServer buildServer, IBuildDetailSpec buildSpec)
@@ -423,7 +431,7 @@ namespace BuildDataDriver.tools
                 
                 var tempVar = buildPackageInformation.InstallationComponents;
                 buildDropPaths = BuildUpDropPaths(dropLocation, dynamicSourceDetails.SubBranch,
-                    out tempVar, myBuildDetail.BuildNumber);
+                    ref tempVar, myBuildDetail.BuildNumber);
                 buildPackageInformation.InstallationComponents = tempVar;
 
                 BuildPackageDetail buildPackageDetail = new BuildPackageDetail()
@@ -452,19 +460,31 @@ namespace BuildDataDriver.tools
         }
 
         internal IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch,
-            out Dictionary<string, KeyValuePair<string, string>> setupPackageList, string buildNumber)
+            ref Dictionary<string, KeyValuePair<string, string>> setupPackageList, string buildNumber)
         {
-            return BuildUpDropPaths(dropLoc, branch, out setupPackageList, buildNumber, true);
+            return BuildUpDropPaths(dropLoc, branch, ref setupPackageList, buildNumber, true);
         }
 
-        private static IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, out Dictionary<string, KeyValuePair<string,string>> setupPackageList, string buildNumber, bool internalCall)
+        private static IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, ref Dictionary<string, KeyValuePair<string,string>> setupPackageList, string buildNumber, bool internalCall)
         {
             Dictionary<string, KeyValuePair<string,string>> setupPackageListTemp = new Dictionary<string, KeyValuePair<string, string>>();
             List<string> componentsRawList = new List<string>();
-            var temp = Directory.EnumerateFiles(dropLoc, "*.exe", SearchOption.AllDirectories);
+            IEnumerable <string> filePaths;
+            if(setupPackageList.Any())
+                setupPackageListTemp = setupPackageList.DeepCopy();            
+            try
+            {
+                filePaths = Directory.EnumerateFiles(dropLoc, "*.exe", SearchOption.AllDirectories);
+            }
+            catch (Exception)
+            {
+                
+                return componentsRawList;
+            }
+
             List<string>manifestBranchList = BuildTarget.Manifest.Select(manifest => manifest.Replace("{BRANCH}", branch)).ToList();
 
-            foreach (var file in temp)
+            foreach (var file in filePaths)
             {
                 var fileName = Path.GetFileNameWithoutExtension(file).ToUpperInvariant();
                 foreach (var manifestItem in manifestBranchList.Where(manifestItem => fileName.ToUpperInvariant().StartsWith(manifestItem.ToUpperInvariant())).Where(manifestItem => !setupPackageListTemp.ContainsKey(fileName)))
@@ -475,7 +495,9 @@ namespace BuildDataDriver.tools
                 }
             }
 
-            setupPackageList = setupPackageListTemp;
+            if (setupPackageListTemp.Any())
+                setupPackageList = setupPackageListTemp.DeepCopy();            
+
             return componentsRawList;
         }
 

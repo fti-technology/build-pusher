@@ -9,27 +9,43 @@
     <Grid>
         <Grid Margin="10,10,0,0" VerticalAlignment="Stretch" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Stretch" DataContext="{StaticResource iBuildDetailViewSource}" >
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="231*"/>
+                <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="5" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="251*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            
 
-                <TreeView x:Name="TreeViewBranches" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <TreeView.ItemContainerStyle>
-                        <Style TargetType="{x:Type TreeViewItem}">
-                            <EventSetter Event="UIElement.MouseLeftButtonUp" Handler="treeViewItem_MouseLeftButtonUp"/>
-                        </Style>
-                    </TreeView.ItemContainerStyle>
-                </TreeView>
-            <GridSplitter Grid.Row="0" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
-            <DataGrid Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ItemsSource="{Binding}"
-                      Grid.Row="0" IsReadOnly="True" />
-            
+
+            <TreeView x:Name="TreeViewBranches" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.ColumnSpan="2" > 
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="{x:Type TreeViewItem}">
+                        
+                        <EventSetter Event="UIElement.MouseLeftButtonUp" Handler="treeViewItem_MouseLeftButtonUp"/>
+                        
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
+            <GridSplitter Grid.Row="0" Grid.Column="2" HorizontalAlignment="Stretch" />
+            <Grid Grid.Row="0" Grid.Column="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Button x:Name="DownLoadBtn" Content="Download..." Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left"  VerticalAlignment="Center" Width="75" Padding="10" Margin="5,5,5,5" Click="DownLoadBtn_Click" IsEnabled="False"/>
+                <DataGrid Name="BuildDataGrid" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ItemsSource="{Binding}"
+                       IsReadOnly="True" d:IsHidden="True" DataContext="{DynamicResource iBuildDetailViewSource}">
+            </DataGrid>
+            </Grid>
+
+
         </Grid>
     </Grid>
 </Window>

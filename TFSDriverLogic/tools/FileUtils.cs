@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using BuildDataDriver.Interfaces;
+using Microsoft.TeamFoundation.Framework.Client;
 using NLog;
 
 namespace BuildDataDriver.tools
@@ -340,6 +341,79 @@ namespace BuildDataDriver.tools
         public static string NormalizePath(string path)
         {
             return Path.GetFullPath(new Uri(path).LocalPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).ToUpperInvariant();
+        }
+
+
+        public static void RoboCopyFile(string source, string dest)
+        {
+            const string exeName = "robocopy.exe";
+
+
+            var filename = System.IO.Path.GetFileName(source);
+            var sourceDir = System.IO.Path.GetDirectoryName(source);
+
+            string commandLine = string.Format("\"{0}\" \"{1}\" \"{2}\" /W:5 /R:{3} /MT:4 /FFT /IPG:0", sourceDir, dest, filename, 4);
+            
+            Process process = ProcessRunner.RunProcess(exeName, commandLine);
+
+            if (process.HasExited)
+            {
+                Debug.WriteLine("Robocopy process has exited,  SOURCE: {0} - Dest {1}", source, dest);
+
+                switch (process.ExitCode)
+                {
+                    case 16: Debug.WriteLine("MirrorDirectory: Fatal Error ");
+                        break;
+                    case 15: Debug.WriteLine("MirrorDirectory: OKCOPY + FAIL + MISMATCHES + XTRA  ");
+                        break;
+                    case 14: Debug.WriteLine("MirrorDirectory: FAIL + MISMATCHES + XTRA ");
+                        break;
+                    case 13: Debug.WriteLine("MirrorDirectory: OKCOPY + FAIL + MISMATCHES ");
+                        break;
+                    case 12: Debug.WriteLine("MirrorDirectory: FAIL + MISMATCHES ");
+                        break;
+                    case 11: Debug.WriteLine("MirrorDirectory: OKCOPY + FAIL + XTRA ");
+                        break;
+                    case 10: Debug.WriteLine("MirrorDirectory: FAIL + XTRA ");
+                        break;
+                    case 9: Debug.WriteLine("MirrorDirectory: OKCOPY + FAIL ");
+                        break;
+                    case 8: Debug.WriteLine("MirrorDirectory: FAIL ");
+                        break;
+                    case 7: Debug.WriteLine("MirrorDirectory: OKCOPY + MISMATCHES + XTRA  ");
+                        break;
+                    case 6: Debug.WriteLine("MirrorDirectory: MISMATCHES + XTRA ");
+                        break;
+                    case 5: Debug.WriteLine("MirrorDirectory: OKCOPY + MISMATCHES  ");
+                        break;
+                    case 4: Debug.WriteLine("MirrorDirectory: MISMATCHES ");
+                        break;
+                    case 3: Debug.WriteLine("MirrorDirectory: OKCOPY + XTRA ");
+                        break;
+                    case 2: Debug.WriteLine("MirrorDirectory: XTRA ");
+                        break;
+                    case 1: Debug.WriteLine("MirrorDirectory: OKCOPY ");
+                        break;
+                    case 0: Debug.WriteLine("MirrorDirectory: No Change ");
+                        break;
+                }
+            }
+            else
+            {
+                Debug.WriteLine("Robocopy process has failed to exit,  SOURCE: {0} - Dest {1}", source, dest);
+                try
+                {
+                    process.Kill();
+                }
+                catch (Exception) { }
+            }
+
+            try
+            {
+                process.Close();
+            }
+            catch (Exception) { }
+
         }
 
         public static void MirrorDirectory(string source, string dest, Logger logger, string logDir = null)
