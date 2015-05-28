@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -11,6 +12,7 @@ using BuildDataDriver.Util;
 using Microsoft.TeamFoundation.Build.Client;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.VersionControl.Client;
+using Newtonsoft.Json;
 using NLog;
 using TFSDriverLogic.Data;
 
@@ -37,7 +39,7 @@ namespace BuildDataDriver.tools
         public const string DabaseLogFile = "FTIArtifactDeployer.sql3";
 
         private List<string> _branchList;
-        
+
         ///////////////////////////////////////////////////////
         // Could externaize for ease of customization
         /// <summary>
@@ -66,13 +68,13 @@ namespace BuildDataDriver.tools
 
 
         public TfsOps(string dataBaseLogDirPath)
-            :this(dataBaseLogDirPath, null)
+            : this(dataBaseLogDirPath, null)
         {
         }
 
         public TfsOps(string dataBaseLogDirPath, string tfsPath)
         {
-            if(!string.IsNullOrEmpty(tfsPath))
+            if (!string.IsNullOrEmpty(tfsPath))
                 this._tfsUri = new Uri(tfsPath);
 
             try
@@ -85,7 +87,7 @@ namespace BuildDataDriver.tools
             {
                 Logger.FatalException("TFS Server connection, failed, please check TFS path in config", ex);
             }
-            
+
             BuildTarget.TargetBranch = DefTargetProject;   // defaults
             BuildTarget.TargetProject = DefTargetBranch;
 
@@ -103,7 +105,7 @@ namespace BuildDataDriver.tools
             _dbBaseMgr = new DataBaseMgr(dbLogPath);
             _dbBaseMgr.Init().Wait();
 
-             _branchList = new List<string>();
+            _branchList = new List<string>();
         }
 
         public TfsTeamProjectCollection TeamProjectCollection
@@ -135,9 +137,9 @@ namespace BuildDataDriver.tools
         /// <returns></returns>
         public static List<IBuildDetail> GetLastBuildDetails(string TFSFullProjectPath, Uri _tfsUri)
         {
-            List<IBuildDetail> buildDetails = new List<IBuildDetail>();;
+            List<IBuildDetail> buildDetails = new List<IBuildDetail>(); ;
             var tfsTeamProjectCollection = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(_tfsUri);
-            var buildServer = (IBuildServer) tfsTeamProjectCollection.GetService(typeof (IBuildServer));
+            var buildServer = (IBuildServer)tfsTeamProjectCollection.GetService(typeof(IBuildServer));
             var dollarIndex = TFSFullProjectPath.IndexOf("$/", StringComparison.Ordinal);
             if (dollarIndex != -1)
             {
@@ -145,7 +147,7 @@ namespace BuildDataDriver.tools
                 var subProject = TFSFullProjectPath.Substring(TFSFullProjectPath.LastIndexOf('/')).Replace("/", "");
                 string tmpStr = TFSFullProjectPath.Replace("$/", "");
                 string project = tmpStr.Substring(0, tmpStr.IndexOf("/", StringComparison.Ordinal));
-                   
+
 
                 foreach (var targetBuild in BuildTarget.TargetBuilds)
                 {
@@ -177,7 +179,7 @@ namespace BuildDataDriver.tools
                             }
                         }
 
-//                        DownLoadFromDropPath(buildRecord, subProject);
+                        //                        DownLoadFromDropPath(buildRecord, subProject);
                     }
                     catch (Exception exception)
                     {
@@ -185,17 +187,13 @@ namespace BuildDataDriver.tools
                 }
 
             }
-            
-            
-
-
 
             return buildDetails;
         }
 
         public static IEnumerable<string> DownLoadPathsFromDropPath(IEnumerable<IBuildDetail> buildRecords, string branch)
         {
-            
+
             List<string> dropPaths = new List<string>();
             if (buildRecords != null)
             {
@@ -224,7 +222,7 @@ namespace BuildDataDriver.tools
 
         public List<string> GetBranchList(List<IBuildsToWatch> buildsToWatch)
         {
-            return ListOfFilteredBranches(buildsToWatch,this._tfsUri);
+            return ListOfFilteredBranches(buildsToWatch, this._tfsUri);
         }
 
         /// <summary>
@@ -249,10 +247,20 @@ namespace BuildDataDriver.tools
 
             // Call to TFS to get the filtered list of target paths
             var baseList = BuildDataDriver.tools.TfsOps.GetBranches(tfsPath);
+
+#if DEBUG
+            Logger.Debug("Branches Found: " + baseList.Count());
+            Logger.Debug("---------------------------------------------------------");
+            foreach (var branchObject in baseList)
+            {
+                Logger.Debug(branchObject.Properties.RootItem.Item);
+            }
+            Logger.Debug("---------------------------------------------------------");
+#endif
             var filteredList = from xxx in baseList
-                let itemName = xxx.Properties.RootItem.Item
-                where paths.Any(path => itemName.StartsWith(path))
-                select xxx.Properties.RootItem.Item;
+                               let itemName = xxx.Properties.RootItem.Item
+                               where paths.Any(path => itemName.StartsWith(path))
+                               select xxx.Properties.RootItem.Item;
 
             var listOfFilteredBranches = filteredList.ToList();
             for (int i = listOfFilteredBranches.Count - 1; i >= 0; i--)
@@ -296,7 +304,7 @@ namespace BuildDataDriver.tools
 
         public Dictionary<IDynamicSourceDetails, IBuildsToWatch> ValidateAndRefineBuildsToWatch(List<string> tfsBuildList, List<IBuildsToWatch> buildsToWatch)
         {
-            
+
             Dictionary<IDynamicSourceDetails, IBuildsToWatch> projectBuildSpecs = new Dictionary<IDynamicSourceDetails, IBuildsToWatch>();
 
             foreach (var buildsToWatchItem in buildsToWatch)
@@ -311,7 +319,7 @@ namespace BuildDataDriver.tools
                         var localfullBranchPath = fullBranchPath;
                         var originalPath = localfullBranchPath;
                         var subProject = localfullBranchPath.Replace("$/" + buildsToWatchTarget.Project + "/" + buildsToWatchTarget.Branch + "/", "");
-                        
+
                         if (!string.IsNullOrEmpty(subProject) && String.CompareOrdinal(originalPath, subProject) != 0)
                         {
 
@@ -323,7 +331,7 @@ namespace BuildDataDriver.tools
                                     string definition = string.Format("{0} {1}", subProjectExpand, targetBuild);
                                     var buildSpec = BuildService.CreateBuildDetailSpec(buildsToWatchTarget.Project,
                                         definition);
-                                    
+
                                     var buildDetails = BuildService.QueryBuilds(buildSpec).Builds;
                                     if (buildDetails.Any())
                                     {
@@ -334,14 +342,14 @@ namespace BuildDataDriver.tools
                                     // This consists of the original IBuildsToWatch data along with the IDynamicSourceDetails that provides the branch information
                                     DynamicSourceDetails dynamicSourceDetails = new DynamicSourceDetails(buildsToWatchTarget.Project, buildsToWatchTarget.Branch, subProject, buildsToWatchTarget.Retention);
 
-                                    var any = projectBuildSpecs.Any(x=> (x.Key.Branch == dynamicSourceDetails.Branch) && (x.Key.Project == dynamicSourceDetails.Project) && (x.Key.SubBranch == dynamicSourceDetails.SubBranch));
-                                    
+                                    var any = projectBuildSpecs.Any(x => (x.Key.Branch == dynamicSourceDetails.Branch) && (x.Key.Project == dynamicSourceDetails.Project) && (x.Key.SubBranch == dynamicSourceDetails.SubBranch));
+
 
                                     if (!any)
                                         projectBuildSpecs.Add(dynamicSourceDetails, buildsToWatchTarget);
                                 }
                                 catch (Exception ex)
-                                {   
+                                {
                                     // catching an exception here means the build definition didn't exist
                                 }
                             }
@@ -355,7 +363,7 @@ namespace BuildDataDriver.tools
                 }
             }
 
-             return projectBuildSpecs;
+            return projectBuildSpecs;
         }
 
 
@@ -366,39 +374,38 @@ namespace BuildDataDriver.tools
             {
                 BuildServer = _teamProjectCollection.ConfigurationServer.Name,
                 Branch = BuildTarget.TargetBranch,
-                TimeZone =  _teamProjectCollection.TimeZone.ToString()
+                TimeZone = _teamProjectCollection.TimeZone.ToString()
             };
             Logger.Info("TFS Build Package, Server: {0},, Branch: {1}, TimeZone: {2}", buildPackageInformation.BuildServer, buildPackageInformation.Branch, buildPackageInformation.TimeZone);
             GetBuildDetail(buildService, buildPackageInformation, dynamicSourceDetails);
 
             // 
             string json = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(buildPackageInformation);
-
-            // Write that JSON to txt file
-            var manifestPath = Path.Combine(Environment.CurrentDirectory + @"BuildMainifest.json");
-            //File.WriteAllText(manifestPath, json); //TODO: FIX ME for ASYNC
-            buildPackageInformation.BuildManifest = manifestPath;
+            buildPackageInformation.BuildManifest = json;
             Logger.Info("Build Manifest Path set: {0}", buildPackageInformation.BuildManifest);
 
             return buildPackageInformation;
         }
 
-        private void GetBuildDetail(IBuildServer buildService, BuildPackageInformation buildPackageInformation, IDynamicSourceDetails dynamicSourceDetails)
+        private void GetBuildDetail(IBuildServer buildService, BuildPackageInformation buildPackageInformation,
+            IDynamicSourceDetails dynamicSourceDetails)
         {
-            foreach (var targetBuild in BuildTarget.TargetBuilds)
+            ConcurrentDictionary<IBuildDefinition, IBuildDetail> concurrentDictionary = new ConcurrentDictionary<IBuildDefinition, IBuildDetail>();
+            //foreach (var targetBuild in BuildTarget.TargetBuilds)
+            Parallel.ForEach(BuildTarget.TargetBuilds, targetBuild =>
             {
-                IEnumerable<string> buildDropPaths = new List<string>();
-                IBuildDetail myBuildDetail = null;
-                string sourceGetVersion = string.Empty;
                 IBuildDefinition buildDefinition = null;
-
                 string subProjectExpand = dynamicSourceDetails.SubBranch.Replace("/", " ");
                 string definition = string.Format("{0} {1}", subProjectExpand, targetBuild);
                 try
                 {
                     //var definition = string.Format("{0} {1}", dynamicSourceDetails.SubBranch, targetBuild);
                     buildDefinition = buildService.GetBuildDefinition(BuildTarget.TargetProject, definition);
-                        //BuildTarget.TargetBranch + " " + targetBuild);
+                    //BuildTarget.TargetBranch + " " + targetBuild);
+                    Uri lastKnownGoodBuild = buildDefinition.LastGoodBuildUri;
+
+                    IBuildDetail myBuildDetail = buildService.GetBuild(lastKnownGoodBuild);
+                    concurrentDictionary.TryAdd(buildDefinition, myBuildDetail);
                 }
                 catch (Exception ex)
                 {
@@ -409,43 +416,53 @@ namespace BuildDataDriver.tools
 
                 if (buildDefinition == null || buildDefinition.LastGoodBuildUri == null)
                 {
-                    Logger.Error("Error, buildDefinition or LastGoodBuildUri not found for {0} - {1} - {2}", BuildTarget.TargetProject, BuildTarget.TargetBranch, targetBuild);
-                    continue;   // continue or remove this build entirely?                    
+                    Logger.Error("Error, buildDefinition or LastGoodBuildUri not found for {0} - {1} - {2}",
+                        BuildTarget.TargetProject, BuildTarget.TargetBranch, targetBuild);
                 }
 
-                Uri lastKnownGoodBuild = buildDefinition.LastGoodBuildUri;
+            });
 
-                myBuildDetail = buildService.GetBuild(lastKnownGoodBuild);
-                string dropLocation = myBuildDetail.DropLocation;
+           // foreach (var buildDefinition in concurrentBag)
+            foreach (var buildTargetItem in concurrentDictionary)
+            {
+             
+                IEnumerable<string> buildDropPaths = new List<string>();
+                string sourceGetVersion = string.Empty;
+                //IBuildDetail myBuildDetail = null;
+                //Uri lastKnownGoodBuild = buildDefinition.LastGoodBuildUri;
+
+                //myBuildDetail = buildService.GetBuild(lastKnownGoodBuild);
+                string dropLocation = buildTargetItem.Value.DropLocation;
                 Logger.Info("Drop location found: {0}", dropLocation);
-                sourceGetVersion = myBuildDetail.SourceGetVersion; // C223345
-                
+                sourceGetVersion = buildTargetItem.Value.SourceGetVersion; // C223345
+
                 // TARGET/BRANCH/VERSION
                 if (!buildPackageInformation.SourceRevs.Contains(sourceGetVersion))
                     buildPackageInformation.SourceRevs.Add(sourceGetVersion);
                 if (!buildPackageInformation.SourceRevs.Contains(sourceGetVersion))
                     buildPackageInformation.SourceRevs.Add(sourceGetVersion);
 
-                if (!buildPackageInformation.BuildLinks.Contains(buildDefinition.LastGoodBuildUri))
-                    buildPackageInformation.BuildLinks.Add(buildDefinition.LastGoodBuildUri);
-                
+                if (!buildPackageInformation.BuildLinks.Contains(buildTargetItem.Key.LastGoodBuildUri))
+                    buildPackageInformation.BuildLinks.Add(buildTargetItem.Key.LastGoodBuildUri);
+
                 var tempVar = buildPackageInformation.InstallationComponents;
                 buildDropPaths = BuildUpDropPaths(dropLocation, dynamicSourceDetails.SubBranch,
-                    ref tempVar, myBuildDetail.BuildNumber);
+                    ref tempVar, buildTargetItem.Value.BuildNumber);
                 buildPackageInformation.InstallationComponents = tempVar;
 
                 BuildPackageDetail buildPackageDetail = new BuildPackageDetail()
                 {
-                    BuildDefName = buildDefinition.Name,
-                    RemotePathTarget = myBuildDetail.Uri,
-                    BuildName = myBuildDetail.BuildNumber,
-                    Completion = myBuildDetail.FinishTime,
+                    BuildDefName = buildTargetItem.Key.Name,
+                    RemotePathTarget = buildTargetItem.Value.Uri,
+                    BuildName = buildTargetItem.Value.BuildNumber,
+                    Completion = buildTargetItem.Value.FinishTime,
                     SourceRev = sourceGetVersion,
-                    BuildNumberFull = myBuildDetail.BuildNumber,
+                    BuildNumberFull = buildTargetItem.Value.BuildNumber,
                     PackageList = buildDropPaths
                 };
                 buildPackageInformation.BuildDetails.Add(buildPackageDetail);
             }
+
         }
 
         private IBuildServer BuildService
@@ -454,7 +471,7 @@ namespace BuildDataDriver.tools
             {
                 if (_teamProjectCollection == null) return null;
 
-                var buildService = (IBuildServer) _teamProjectCollection.GetService(typeof (IBuildServer));
+                var buildService = (IBuildServer)_teamProjectCollection.GetService(typeof(IBuildServer));
                 return buildService;
             }
         }
@@ -465,38 +482,42 @@ namespace BuildDataDriver.tools
             return BuildUpDropPaths(dropLoc, branch, ref setupPackageList, buildNumber, true);
         }
 
-        private static IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, ref Dictionary<string, KeyValuePair<string,string>> setupPackageList, string buildNumber, bool internalCall)
+        private static IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, ref Dictionary<string, KeyValuePair<string, string>> setupPackageList, string buildNumber, bool internalCall)
         {
-            Dictionary<string, KeyValuePair<string,string>> setupPackageListTemp = new Dictionary<string, KeyValuePair<string, string>>();
+            Dictionary<string, KeyValuePair<string, string>> setupPackageListTemp = new Dictionary<string, KeyValuePair<string, string>>();
             List<string> componentsRawList = new List<string>();
-            IEnumerable <string> filePaths;
-            if(setupPackageList.Any())
-                setupPackageListTemp = setupPackageList.DeepCopy();            
+            IEnumerable<string> filePaths;
+            if (setupPackageList.Any())
+                setupPackageListTemp = setupPackageList.DeepCopy();
             try
             {
                 filePaths = Directory.EnumerateFiles(dropLoc, "*.exe", SearchOption.AllDirectories);
             }
             catch (Exception)
             {
-                
+
                 return componentsRawList;
             }
 
-            List<string>manifestBranchList = BuildTarget.Manifest.Select(manifest => manifest.Replace("{BRANCH}", branch)).ToList();
-
-            foreach (var file in filePaths)
+            List<string> manifestBranchList = BuildTarget.Manifest.Select(manifest => manifest.Replace("{BRANCH}", branch)).ToList();
+            object sync = new object();
+            //foreach (var file in filePaths)
+            Parallel.ForEach(filePaths, file =>
             {
                 var fileName = Path.GetFileNameWithoutExtension(file).ToUpperInvariant();
                 foreach (var manifestItem in manifestBranchList.Where(manifestItem => fileName.ToUpperInvariant().StartsWith(manifestItem.ToUpperInvariant())).Where(manifestItem => !setupPackageListTemp.ContainsKey(fileName)))
                 {
-                    setupPackageListTemp.Add(fileName, new KeyValuePair<string, string>(buildNumber, file));
-                    componentsRawList.Add(file);
+                    lock (sync)
+                    {
+                        setupPackageListTemp.Add(fileName, new KeyValuePair<string, string>(buildNumber, file));
+                        componentsRawList.Add(file);
+                    }
                     Logger.Info("Drop path added: {0} - for Branch: {1}, Build Number: {2}", file, branch, buildNumber);
                 }
-            }
+            });
 
             if (setupPackageListTemp.Any())
-                setupPackageList = setupPackageListTemp.DeepCopy();            
+                setupPackageList = setupPackageListTemp.DeepCopy();
 
             return componentsRawList;
         }
@@ -505,14 +526,24 @@ namespace BuildDataDriver.tools
 
         private static IEnumerable<BranchObject> GetBranches(Uri buildServerPath)
         {
-            var tfs = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(buildServerPath);
-            var versionControlServer = tfs.GetService<VersionControlServer>();
+            VersionControlServer versionControlServer = null;
+            try
+            {
+                var tfs = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(buildServerPath);
+                versionControlServer = tfs.GetService<VersionControlServer>();
 
+            }
+            catch (Exception ex)
+            {
+                Logger.ErrorException("Error connecting to VersionControlServer", ex);
 
-            var baseList = versionControlServer.QueryRootBranchObjects(RecursionType.Full)
-                .Where(b => !b.Properties.RootItem.IsDeleted);
-            return baseList;
-        }    
+            }
+
+            if (versionControlServer == null)
+                return new List<BranchObject>();
+
+            return versionControlServer.QueryRootBranchObjects(RecursionType.Full).Where(b => !b.Properties.RootItem.IsDeleted);
+        }
 
         public BuildPackageInformation Query(IDynamicSourceDetails dynamicSourceDetails)
         {
@@ -526,16 +557,19 @@ namespace BuildDataDriver.tools
             if (query.Result != null)
             {
                 buildData.WatchBuild = false;
-                return buildData;                
+                return buildData;
             }
 
             // Build Up list of package details for the database... Many of these correspond back to one PackageArtifactData
             List<ArtifactDetail> artifactDetails = (from buildDetail in buildData.BuildDetails
-                from package in buildDetail.PackageList
-                select new ArtifactDetail()
-                {
-                    BuildNumber = buildDetail.BuildNumberFull, PackageFullPath = package,PackageName = Path.GetFileName(package), PackageCompletionTime = buildDetail.Completion
-                }).ToList();
+                                                    from package in buildDetail.PackageList
+                                                    select new ArtifactDetail()
+                                                    {
+                                                        BuildNumber = buildDetail.BuildNumberFull,
+                                                        PackageFullPath = package,
+                                                        PackageName = Path.GetFileName(package),
+                                                        PackageCompletionTime = buildDetail.Completion
+                                                    }).ToList();
 
             // Master DB build detail
             PackageArtifactData packageArtifactData = new PackageArtifactData()
@@ -558,7 +592,7 @@ namespace BuildDataDriver.tools
 
 
 
-        public void SetDbDeployedStatus(string project, string branch,string subProject, string version, bool deployed)
+        public void SetDbDeployedStatus(string project, string branch, string subProject, string version, bool deployed)
         {
             var ret = _dbBaseMgr.QueryByProjBranchVer(project, branch, subProject, version);
             ret.Wait();
@@ -586,7 +620,7 @@ namespace BuildDataDriver.tools
                 string key = Path.GetFileName(path);
                 if (ret.Result != null)
                 {
-              
+
                     var artifactData = ret.Result;
                     ArtifactDetail detail = null;
 

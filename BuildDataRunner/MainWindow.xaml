@@ -6,19 +6,20 @@
     <Window.Resources>
         <CollectionViewSource x:Key="iBuildDetailViewSource" d:DesignSource="{d:DesignInstance {x:Type Client:IBuildDetail}, CreateList=True}"/>
     </Window.Resources>
-    <Grid>
+    
+    <Grid>        
         <Grid Margin="10,10,0,0" VerticalAlignment="Stretch" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Stretch" DataContext="{StaticResource iBuildDetailViewSource}" >
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="231*"/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="20*"/>
                 <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="251*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-
 
             <TreeView x:Name="TreeViewBranches" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.ColumnSpan="2" > 
                 <TreeView.ItemContainerStyle>
@@ -37,15 +38,50 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <Button x:Name="DownLoadBtn" Content="Download..." Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left"  VerticalAlignment="Center" Width="75" Padding="10" Margin="5,5,5,5" Click="DownLoadBtn_Click" IsEnabled="False"/>
                 <DataGrid Name="BuildDataGrid" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ItemsSource="{Binding}"
-                       IsReadOnly="True" d:IsHidden="True" DataContext="{DynamicResource iBuildDetailViewSource}">
+                       IsReadOnly="True" d:IsHidden="True" >
             </DataGrid>
+                <ListView Grid.Column="0" Grid.Row="2" x:Name="StepsListView" Height="100" ItemsSource="{Binding}">
+                </ListView>
             </Grid>
 
-
+            <DockPanel Grid.Row="2" Grid.ColumnSpan="4" Grid.Column="0" >
+                <StatusBar DockPanel.Dock="Bottom">
+                    <StatusBar.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="100" />
+                                </Grid.ColumnDefinitions>
+                            </Grid>
+                        </ItemsPanelTemplate>
+                    </StatusBar.ItemsPanel>
+                    <StatusBarItem>
+                        <TextBlock Name="lblCursorPosition" />
+                    </StatusBarItem>
+                    <Separator Grid.Column="1" />
+                    <StatusBarItem Grid.Column="2">
+                        <TextBlock Name="StatusBlock" Text="{Binding PresentationTraceSources.TraceLevel=High}" />
+                    </StatusBarItem>
+                    <Separator Grid.Column="3" />
+                    <StatusBarItem Grid.Column="4">
+                        <ProgressBar Value="0" Width="90" Height="16" />
+                    </StatusBarItem>
+                </StatusBar>
+            </DockPanel>
         </Grid>
+        <Border Name="BuysBorder" BorderBrush="Black" BorderThickness="1" Background="#80000000" Visibility="Collapsed" Grid.RowSpan="4" Grid.ColumnSpan="3">
+            <Grid>
+                <TextBlock Margin="0" TextWrapping="Wrap" Text="Busy, Please Wait..." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontWeight="Bold" Foreground="#7EFFFFFF"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

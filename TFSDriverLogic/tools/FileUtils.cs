@@ -179,14 +179,15 @@ namespace BuildDataDriver.tools
                 // ignored
                 logger.InfoException("XCopyFilesParallel failed: SOURCE: " + dest, ex);
             }
-            
 
+            var total = fileList.Count;
             Parallel.ForEach(fileList, file =>
             {
+                logger.Info("XCopy file: " + file + " dest: " + dest + "  count: " + count + "/" + total);
                 RunXCopyProcess(dest, logger, file);
                 Interlocked.Increment(ref count);
             });
-
+            logger.Info("XCopy file completed count: " + count + "/" + total);
             return count;
         }
 

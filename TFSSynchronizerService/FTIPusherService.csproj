@@ -13,7 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>b06e58d9</NuGetPackageImportStamp>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>\\pgp187-jmcfal01\TESTSHARE\Applications\FTIPusher\v1.3\</PublishUrl>
+    <PublishUrl>\\pgp187-jmcfal01\TESTSHARE\Applications\FTIPusher\v1.5\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Unc</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -25,7 +25,7 @@
     <MapFileExtensions>true</MapFileExtensions>
     <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
-    <ApplicationRevision>17</ApplicationRevision>
+    <ApplicationRevision>19</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>

@@ -42,6 +42,7 @@ namespace FTIPusher.Util
         public bool RunMirrorCopy { get; set; }
         public bool RunFtpUpload { get; set; }
         public bool RunHttpMirror { get; set; }
+        public bool RunCheckSum { get; set; }
         public int UpdateFrequencyInMinutes { get; set; }
         public int MirrorLogRetention { get; set; }
         public int MirrorRetryNumber { get; set; }
