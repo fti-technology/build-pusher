@@ -50,10 +50,6 @@ namespace BuildDataRunner
 
             InitializeComponent();
 
-           // MyBuildDetails = new ObservableCollection<IBuildDetail>();
-            //MyBuildDetails.CollectionChanged += BuildDetailsOnCollectionChanged;
-            //BindingOperations.EnableCollectionSynchronization(MyBuildDetails, _itemsLock);
-
             _dataBaseLogDirPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments), _databaseSubDir);
             _readJsonConfigOptions = ServiceOptions.ReadJsonConfigOptions(Logger);
             if (_readJsonConfigOptions == null)
@@ -61,12 +57,6 @@ namespace BuildDataRunner
             _tfsPath = new Uri(_readJsonConfigOptions.BuildServer);
             GetTfsBranches();
         }
-
-        private void BuildDetailsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
-        {
-            int x = 1;
-        }
-
         
         public IEnumerable<string> DropPaths { get; set; }
 
@@ -81,20 +71,6 @@ namespace BuildDataRunner
 
             return buildDetails;
         }
-
-      
-        //// THE WRAPPER...
-        //public List<IBuildDetail> MyBuildDetails
-        //{
-        //    get { return (List<IBuildDetail>)GetValue(MyBuildDetailsProperty); }
-        //    set { SetValue(MyBuildDetailsProperty, value); }
-        //}
-
-        //// Using a DependencyProperty as the backing store for MyBuildDetails.  This enables animation, styling, binding, etc...
-        //public static readonly DependencyProperty MyBuildDetailsProperty =
-        //    DependencyProperty.Register("MyBuildDetails", typeof(List<IBuildDetail>), typeof(MainWindow), new UIPropertyMetadata(new List<IBuildDetail>(), OnMyBuildDetailsPropertyChanged));
-
-
 
         public ObservableCollection<IBuildDetail> MyBuildDetails
         {
@@ -134,15 +110,9 @@ namespace BuildDataRunner
 
         private void NOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-
-            
-                UpdateDownloadDetails();
-            
+            UpdateDownloadDetails();
         }
-
-
-       
-
+        
         public IEnumerable<string> MyDropPaths
         {
             get { return (IEnumerable<string>)GetValue(MyDropPathsProperty); }
@@ -173,47 +143,8 @@ namespace BuildDataRunner
 
                 },TaskScheduler.FromCurrentSynchronizationContext());
 
-
-        //// BuildDetails.Clear();
-           // List<IBuildDetail> listOfBuildDetails = new List<IBuildDetail>();
-
-
-           // var startNew = Task.Run(() => {
-           //                                   return UpdateBuildDetails(TFSProjectPath, _tfsPath);
-           // });
-            
-            
-           // startNew.ContinueWith(r => {
-           //     MyBuildDetails = r.Result;
-           // }, TaskScheduler.FromCurrentSynchronizationContext());
-           // //var startNew = Task.Factory.StartNew(() =>
-            //{
-            //    //listOfBuildDetails = UpdateBuildDetails(TFSProjectPath, _tfsPath);
-
-
-            //    return UpdateBuildDetails(TFSProjectPath, _tfsPath);
-            //});
-
-            //startNew.ContinueWith(r => {
-            //    MyBuildDetails = r.Result;
-            //});
-            //}).ContinueWith(buildDetailsRet => {
-
-            //    Dispatcher.Invoke(()=>
-            //    {
-            //        MyBuildDetails = buildDetailsRet.Result;
-            //    });
-
-            //}); 
             DownLoadBtn.IsEnabled = true;
             
-        }
-
-
-        private async Task<IEnumerable<string>> DownLoadPathsFromDropPathAsync(IEnumerable<IBuildDetail> buildRecords, string branch)
-        {
-            var res = await Task.Run(() => TfsOps.DownLoadPathsFromDropPath(MyBuildDetails, branch));
-            return res;
         }
 
         private void UpdateDownloadDetails()//ObservableCollection<IBuildDetail> listOfBuildDetails)
@@ -226,22 +157,23 @@ namespace BuildDataRunner
                 if (!string.IsNullOrEmpty(treeValue))
                 {
                     var subBranch = treeValue.Substring(treeValue.LastIndexOf('/')).Replace("/", "");
+                    List<string> update = new List<string>(){"Updating...."};
+                    StepsListView.DataContext = null;                    
 
-                    DownLoadPathsFromDropPathAsync(MyBuildDetails.ToList(), subBranch)
-                    .ContinueWith(r => StepsListView.DataContext = r.Result, TaskScheduler.FromCurrentSynchronizationContext());
+                    StepsListView.DataContext = update;
 
+                    TaskScheduler uiTaskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 
-
-                    //Task.Factory.StartNew(() => { DropPaths = TfsOps.DownLoadPathsFromDropPath(MyBuildDetails, subBranch); })
-                    //    .Wait();
-                    //StepsListView.DataContext = DropPaths;
+                    TfsOps.DownLoadPathsFromDropPathAsync(MyBuildDetails, subBranch).ContinueWith(t =>
+                        {
+                            StepsListView.DataContext = t.Result;
+                        }, uiTaskScheduler);
                 }
                 else
                 {
-                    StepsListView.DataContext = new List<string>();
+                    StepsListView.DataContext = null;
                 }
             }
-            
         }
 
         private void GetTfsBranches()

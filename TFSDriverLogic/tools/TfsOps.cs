@@ -191,6 +191,25 @@ namespace BuildDataDriver.tools
             return buildDetails;
         }
 
+        public static Task<List<string>> DownLoadPathsFromDropPathAsync(IEnumerable<IBuildDetail> buildRecords, string branch)
+        {
+            return Task.Run(() =>
+            {
+                List<string> dropPaths = new List<string>();
+                if (buildRecords != null)
+                {
+                    var intallationComponents = new Dictionary<string, KeyValuePair<string, string>>();
+                    foreach (var buildRecord in buildRecords)
+                    {
+                        dropPaths.AddRange(BuildUpDropPaths(buildRecord.DropLocation, branch,
+                            ref intallationComponents, buildRecord.BuildNumber, true));
+                    }
+                }
+
+                return dropPaths;
+            });
+        }
+
         public static IEnumerable<string> DownLoadPathsFromDropPath(IEnumerable<IBuildDetail> buildRecords, string branch)
         {
 
