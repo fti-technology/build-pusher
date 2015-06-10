@@ -359,6 +359,25 @@ namespace BuildDataRunner
                     }
 
                     // Go to tree, get branch
+                    var treeItem = TreeViewBranches.SelectedItem as TreeViewItem;
+                    if (treeItem != null)
+                    {
+                        var treeValue = treeItem.Header.ToString();
+
+                        foreach (var ftpLocation in _readJsonConfigOptions.FTPLocations)
+                        {
+
+                            if (ftpLocation.InternalSharePath != null &&
+                                !string.IsNullOrEmpty(ftpLocation.InternalSharePath))
+                            {
+                                //\\\\Pgp032devnas01\\Builds\\Deploy
+                                //\\seadrop.dev.tech.local\builds\Ringtail\Dev\2015\Ringtail8\Packages\2015 Ringtail8 Packages_20150609.1\Deployment\Ringtail\Ringtail_2015 Ringtail8 Packages_20150609.1.exe
+                                Console.WriteLine(ftpLocation.InternalSharePath);
+                            }
+
+                        }
+                    }
+
                     // Get locations from options drop down
                     // Build paths
                     // search
@@ -366,7 +385,7 @@ namespace BuildDataRunner
                 }
 
             }
-        }
+        }       
 
     }
 
