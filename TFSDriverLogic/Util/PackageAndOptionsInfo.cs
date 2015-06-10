@@ -10,7 +10,7 @@ using NLog;
 
 namespace FTIPusher.Util
 {
-  
+
     /// <summary>
     /// All the classes in here are related to Reading in the JSon options and acquiring the information about the core branches
     /// </summary>
@@ -24,6 +24,7 @@ namespace FTIPusher.Util
         public string FtpProxy { get; set; }
         public string FtpPort { get; set; }
         public string FTPDirectory { get; set; }
+        public string InternalSharePath { get; set; }
     }
 
     public class BuildsToWatch : IBuildsToWatch
@@ -47,6 +48,7 @@ namespace FTIPusher.Util
         public int MirrorLogRetention { get; set; }
         public int MirrorRetryNumber { get; set; }
         public string RESTAPIVER { get; set; }
+        public string MONGOLOGURL { get; set; }
         public List<string> Mirror { get; set; }
         public List<FtpLocation> FTPLocations { get; set; }
         public List<string> HTTPShares { get; set; }

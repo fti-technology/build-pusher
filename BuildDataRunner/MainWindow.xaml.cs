@@ -37,12 +37,15 @@ namespace BuildDataRunner
         private readonly TfsOps _tfsOps;
         private const string _databaseSubDir = "FTIDeployer";
         private readonly string _dataBaseLogDirPath;
-        private ServiceOptionsRoot _readJsonConfigOptions;
+        private readonly ServiceOptionsRoot _readJsonConfigOptions;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private Uri _tfsPath = null;
+        public int LastSelectDropIndex { get; set; }
+        public static string UpdateMessage = "Updating path details....";
         // ServiceOptionsRoot serviceOptions
         public MainWindow()
         {
+            LastSelectDropIndex = -1;
             PresentationTraceSources.Refresh();
             PresentationTraceSources.DataBindingSource.Listeners.Add(new ConsoleTraceListener());
             PresentationTraceSources.DataBindingSource.Listeners.Add(new DebugTraceListener());
@@ -55,7 +58,9 @@ namespace BuildDataRunner
             if (_readJsonConfigOptions == null)
                 return;
             _tfsPath = new Uri(_readJsonConfigOptions.BuildServer);
+
             GetTfsBranches();
+            
         }
         
         public IEnumerable<string> DropPaths { get; set; }
@@ -149,6 +154,7 @@ namespace BuildDataRunner
 
         private void UpdateDownloadDetails()//ObservableCollection<IBuildDetail> listOfBuildDetails)
         {
+            DropLocations.IsEnabled = false;
             var treeItem = TreeViewBranches.SelectedItem as TreeViewItem;
             if (treeItem != null)
             {
@@ -157,7 +163,7 @@ namespace BuildDataRunner
                 if (!string.IsNullOrEmpty(treeValue))
                 {
                     var subBranch = treeValue.Substring(treeValue.LastIndexOf('/')).Replace("/", "");
-                    List<string> update = new List<string>(){"Updating...."};
+                    List<string> update = new List<string>(){UpdateMessage};
                     StepsListView.DataContext = null;                    
 
                     StepsListView.DataContext = update;
@@ -167,6 +173,7 @@ namespace BuildDataRunner
                     TfsOps.DownLoadPathsFromDropPathAsync(MyBuildDetails, subBranch).ContinueWith(t =>
                         {
                             StepsListView.DataContext = t.Result;
+                            DropLocations.IsEnabled = true;
                         }, uiTaskScheduler);
                 }
                 else
@@ -268,7 +275,99 @@ namespace BuildDataRunner
             }
         }
 
-    
+        private void DropLocations_Loaded(object sender, RoutedEventArgs e)
+        {
+            var comboBox = sender as System.Windows.Controls.ComboBox;
+            if (comboBox == null)
+                return;
+            
+            List<ComboBoxItem> comboBoxItems = new List<ComboBoxItem>();
+          
+            ComboBoxItem item = new ComboBoxItem();
+            item.Content = "TFS Drop";
+            item.IsEnabled = true;
+            item.IsSelected = true;
+            comboBoxItems.Add(item);
+
+            //dropsList.Add("TFS Drop");  // Default
+
+            ////var selectedItem = TreeViewBranches.SelectedItem;
+
+            if (_readJsonConfigOptions.FTPLocations.Any())
+            {
+                foreach (var ftpLocation in _readJsonConfigOptions.FTPLocations)
+                {
+                    if (ftpLocation.InternalSharePath != null && !string.IsNullOrEmpty(ftpLocation.InternalSharePath))
+                    {
+                        comboBoxItems.Add(new ComboBoxItem()
+                        {
+                            Content = ftpLocation.InternalSharePath,
+                            IsEnabled = false,
+                            IsSelected = false
+                        });
+                    }
+                }
+
+            }
+
+            comboBox.ItemsSource = comboBoxItems;
+            comboBox.SelectedIndex = 0;
+            LastSelectDropIndex = comboBox.SelectedIndex;
+            
+        }
+
+        private void DropLocations_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var comboBox = sender as System.Windows.Controls.ComboBox;
+            if (comboBox == null)
+                return;
+
+            if(comboBox.SelectedIndex == 0)
+                
+
+
+            LastSelectDropIndex = comboBox.SelectedIndex;
+            //TreeViewBranches.Items.Clear();
+            ////var branchList = TfsOps.GetBranchList(_readJsonConfigOptions.BuildsToWatch.ToList<IBuildsToWatch>(), _tfsPath);
+            //foreach (var branch in branchList)
+            //{
+            //    treeViewItem.Items.Add(new TreeViewItem() { Header = branch });
+            //}
+            //TreeViewBranches.Items.Add(treeViewItem);
+        }
+
+        private void StepsListView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+
+            var x = 1;
+            if (e.NewValue == null)
+            {
+
+
+            }
+            else
+            {
+                var strval = e.NewValue as List<string>;
+                if (strval == null ) 
+                    return;
+
+                if (strval.Any())
+                {
+                    if (String.CompareOrdinal(strval[0], UpdateMessage) == 0)
+                    {
+                        return;
+                    }
+
+                    // Go to tree, get branch
+                    // Get locations from options drop down
+                    // Build paths
+                    // search
+                    // enable found items
+                }
+
+            }
+        }
+
     }
 
     public class DebugTraceListener : TraceListener
