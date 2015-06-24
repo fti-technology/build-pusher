@@ -51,14 +51,13 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Label Content="Download Location:" HorizontalAlignment="Stretch" Margin="5,5,5,5" FontSize="12" Grid.Column="0" Grid.Row="0" />
-                    <ComboBox x:Name="DropLocations" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top"  Margin="5,5,5,5" Loaded="DropLocations_Loaded" SelectionChanged="DropLocations_SelectionChanged" />
+                    <ComboBox x:Name="DropLocations" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top"  Margin="5,5,5,5" Loaded="DropLocations_Loaded" SelectionChanged="DropLocations_SelectionChanged"  />
                 </Grid>
                 <Button x:Name="DownLoadBtn" Content="Download..." Grid.Column="0" Grid.Row="2" HorizontalAlignment="Left"  VerticalAlignment="Center" Width="75" Padding="10" Margin="5,5,5,5" Click="DownLoadBtn_Click" IsEnabled="False"/>
                 <DataGrid Name="BuildDataGrid" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ItemsSource="{Binding}"
                        IsReadOnly="True" d:IsHidden="True" >
             </DataGrid>
-                <ListView Grid.Column="0" Grid.Row="3" x:Name="StepsListView" Height="100" ItemsSource="{Binding}" DataContextChanged="StepsListView_DataContextChanged">
-                </ListView>
+                <ListView Grid.Column="0" Grid.Row="3" x:Name="StepsListView" Height="100" ItemsSource="{Binding}"/>
             </Grid>
 
             <DockPanel Grid.Row="4" Grid.ColumnSpan="4" Grid.Column="0" >

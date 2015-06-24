@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -162,7 +163,7 @@ namespace BuildDataRunner
 
                 if (!string.IsNullOrEmpty(treeValue))
                 {
-                    var subBranch = treeValue.Substring(treeValue.LastIndexOf('/')).Replace("/", "");
+                    var subBranch = SubBranchFromTfsPath(treeValue);
                     List<string> update = new List<string>(){UpdateMessage};
                     StepsListView.DataContext = null;                    
 
@@ -174,6 +175,8 @@ namespace BuildDataRunner
                         {
                             StepsListView.DataContext = t.Result;
                             DropLocations.IsEnabled = true;
+
+                            StepsListView_DataContextChanged(t.Result as List<string>);
                         }, uiTaskScheduler);
                 }
                 else
@@ -235,18 +238,37 @@ namespace BuildDataRunner
                     if (result == System.Windows.Forms.DialogResult.OK)
                     {
                         //dialog.SelectedPath
-
+                        IEnumerable<string> dropPaths = new List<string>();
                         var subBranch = treeValue.Substring(treeValue.LastIndexOf('/')).Replace("/", "");
-                        var dropsPaths = TfsOps.DownLoadPathsFromDropPath(BuildDataGrid.Items.Cast<IBuildDetail>(), subBranch);
+                        if (DropLocations.IsEnabled)
+                        {
+                            if (DropLocations.SelectedIndex == 0)
+                            {
+                                dropPaths = TfsOps.DownLoadPathsFromDropPath(BuildDataGrid.Items.Cast<IBuildDetail>(), subBranch);
+                            }
+                            else
+                            {
+                                var comboBoxItem = DropLocations.SelectedItem as ComboBoxItem;
+                                if(comboBoxItem != null)
+                                    dropPaths = comboBoxItem.Tag as List<string>;
+                            }
+                        }
+
+
+                        if(!DropLocations.IsEnabled || !dropPaths.Any())
+                        {
+                            dropPaths = TfsOps.DownLoadPathsFromDropPath(BuildDataGrid.Items.Cast<IBuildDetail>(), subBranch);    
+                        }
+                        
                         long count = 1;
                         Object thisLock = new Object();
                         ProgressDialogResult resultProgress = ProgressDialog.Execute(this, "Downloading", () =>
                         {
-                             long dropPathsCount  = dropsPaths.Count();
+                            long dropPathsCount = dropPaths.Count();
 
                             Task.Factory.StartNew(() =>
                             {
-                                Parallel.ForEach(dropsPaths, new ParallelOptions {MaxDegreeOfParallelism = 4},
+                                Parallel.ForEach(dropPaths, new ParallelOptions { MaxDegreeOfParallelism = 4 },
                                     item =>
                                     {
                                         ProgressDialog.Current.ReportWithCancellationCheck(
@@ -336,57 +358,143 @@ namespace BuildDataRunner
             //TreeViewBranches.Items.Add(treeViewItem);
         }
 
-        private void StepsListView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        private void StepsListView_DataContextChanged(List<string> dropListDetails)
         {
 
-            var x = 1;
-            if (e.NewValue == null)
+            
+            if (dropListDetails == null || !dropListDetails.Any())
             {
-
+                return;
 
             }
             else
             {
-                var strval = e.NewValue as List<string>;
-                if (strval == null ) 
-                    return;
+              
 
-                if (strval.Any())
-                {
-                    if (String.CompareOrdinal(strval[0], UpdateMessage) == 0)
-                    {
-                        return;
-                    }
 
                     // Go to tree, get branch
                     var treeItem = TreeViewBranches.SelectedItem as TreeViewItem;
                     if (treeItem != null)
                     {
                         var treeValue = treeItem.Header.ToString();
+                        if (string.IsNullOrEmpty(treeValue))
+                            return;
 
+                        var comboBoxItems = new List<ComboBoxItem>();
+                        try
+                        {
+
+                             comboBoxItems.Add(
+                                       new ComboBoxItem()
+                                    {
+                                        Content = "TFS Drop",
+                                        IsEnabled = true,
+                                        IsSelected = true,
+                                        Tag = null,
+                                    });
+
+                            var cnt = DropLocations.ItemsSource = comboBoxItems;
+                        }
+                        catch (Exception ex)
+                        {
+                            
+                            
+                        }
+                        
+
+                        var subBranch = SubBranchFromTfsPath(treeValue);
                         foreach (var ftpLocation in _readJsonConfigOptions.FTPLocations)
                         {
+
+                            
 
                             if (ftpLocation.InternalSharePath != null &&
                                 !string.IsNullOrEmpty(ftpLocation.InternalSharePath))
                             {
+                                var workingDir = System.IO.Path.Combine(ftpLocation.InternalSharePath, subBranch);
+                                bool bFoundMatch = false;
+                                List<string> foundItems = new List<string>();
+                                foreach (var directory in Directory.GetDirectories(workingDir))
+                                {
+                                    
+                                        foreach (var file in dropListDetails)
+                                        {
+                                            var strings = Directory.GetFiles(directory, System.IO.Path.GetFileName(file));
+                                            if (strings.Any())
+                                            {
+                                                bFoundMatch = true;
+                                                foundItems.AddRange(strings);
+                                            }
+                                            else
+                                            {
+                                                bFoundMatch = false;
+                                                foundItems.Clear();
+                                                break;
+                                            }
+                                            
+                                        }
+                                    
+                                        if (bFoundMatch)
+                                        {
+                                            break;
+                                        }
+                                }
+
+                                // ENABLE PATH IF FOUND
+                                if (bFoundMatch)
+                                {
+
+                                    try
+                                    {
+
+                                    
+                                    comboBoxItems.Add(
+                                       new ComboBoxItem()
+                                    {
+                                        Content = ftpLocation.InternalSharePath,
+                                        IsEnabled = true,
+                                        IsSelected = false,
+                                        Tag = foundItems
+                                    });
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+
+                                        
+                                    }
+                                }
+
+                                // $/Ringtail/Dev/2015
                                 //\\\\Pgp032devnas01\\Builds\\Deploy
                                 //\\seadrop.dev.tech.local\builds\Ringtail\Dev\2015\Ringtail8\Packages\2015 Ringtail8 Packages_20150609.1\Deployment\Ringtail\Ringtail_2015 Ringtail8 Packages_20150609.1.exe
                                 Console.WriteLine(ftpLocation.InternalSharePath);
                             }
 
                         }
-                    }
 
-                    // Get locations from options drop down
+                        if (comboBoxItems.Any())
+                        {
+                            
+                            DropLocations.ItemsSource = comboBoxItems;
+                            DropLocations.SelectedIndex = 0;
+                        }
+
+
+
+                        // Get locations from options drop down
                     // Build paths
                     // search
                     // enable found items
                 }
 
             }
-        }       
+        }
 
+        private static string SubBranchFromTfsPath(string treeValue)
+        {
+            return treeValue.Substring(treeValue.LastIndexOf('/')).Replace("/", "");
+        }
     }
 
     public class DebugTraceListener : TraceListener
