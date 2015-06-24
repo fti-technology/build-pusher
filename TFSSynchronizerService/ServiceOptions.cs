@@ -104,6 +104,8 @@ namespace FTIPusher
             if (serviceOptions.RunBuildUpdate)
             {
                 RunBuildUpdate(serviceOptions, buildQueryManifest, buildUpdateManifest);
+
+                RunBuildCleanUp(serviceOptions, buildQueryManifest);
             }
 
             if (serviceOptions.RunFtpUpload)
@@ -232,6 +234,36 @@ namespace FTIPusher
             _logger.Info("RunFtpUpload completed");
         }
 
+        private void RunBuildCleanUp(ServiceOptionsRoot serviceOptions, Dictionary<IDynamicSourceDetails, BuildPackageInformation> buildQueryManifest)
+        {
+            ///////////////////////////////////////////////////////////
+            // Clean up
+            ///////////////////////////////////////////////////////////
+            try
+            {
+
+                foreach (var buildUpdateItem in buildQueryManifest)
+                {
+                    var currentTarget = buildUpdateItem;
+
+                    _logger.Info("Cleanning cache: " + currentTarget.Value.Branch);
+                    
+                    // Collect the data on the items that were cleaned, so that the DB status can be set
+                    var packageDeployedInfo = CleanUpCacheShare(serviceOptions, _logger, currentTarget.Key);
+
+                    foreach (var deployedPackageInfo in packageDeployedInfo)
+                    {
+                        _tfsOps.SetDbDeployedStatus(deployedPackageInfo.Project, deployedPackageInfo.Branch,
+                            deployedPackageInfo.SubBranch,
+                            deployedPackageInfo.Version, deployedPackageInfo.Deployed);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.InfoException("Exception Cleaning Cache Server", ex);
+            }
+        }
 
         /// <summary>
         /// Acquires and builds up a local cache of packages
@@ -265,7 +297,7 @@ namespace FTIPusher
             Task.WaitAll(tasks.ToArray());
 
             /////////////////////////////////////////////////////////
-            // Handle the individual returns synchronously to updat
+            // Handle the individual returns synchronously to update
             // the Database 
             /////////////////////////////////////////////////////////
             foreach (var task in tasks)
@@ -302,6 +334,11 @@ namespace FTIPusher
             var branchList = _tfsOps.GetBranchList(serviceOptions.BuildsToWatch.ToList<IBuildsToWatch>());
 
             _logger.Info("TFS Branches Found: {0}", branchList.Count);
+            foreach (var branch in branchList)
+            {
+                _logger.Info(branch);
+            }
+
             // Validate that the buidls exist and put together the data needed to acquire them
             var validateAndRefineBuildsToWatch = _tfsOps.ValidateAndRefineBuildsToWatch(branchList,
                 serviceOptions.BuildsToWatch.ToList<IBuildsToWatch>());
@@ -409,20 +446,6 @@ namespace FTIPusher
             //}
 
 
-            ///////////////////////////////////////////////////////////
-            // Clean up
-            ///////////////////////////////////////////////////////////
-            try
-            {
-                _logger.Info("Cleanning cache: " + buildsToWatch.Key);
-                // Collect the data on the items that were cleaned, so that the DB status can be set
-                packageDeployedInfo = CleanUpCacheShare(serviceOptions, _logger, buildsToWatch.Key);
-            }
-            catch (Exception ex)
-            {
-                _logger.InfoException("Exception Cleaning Cache Server", ex);
-            }
-
 
             var tickCount = Environment.TickCount;
             _logger.Info("Completed work: Task= " + Task.CurrentId + " ,TickCount= " + tickCount + " ,Thread= " +
@@ -445,11 +468,22 @@ namespace FTIPusher
             IDynamicSourceDetails buildsToWatch)
         {
             ConcurrentBag<DeployedPackageInfo> deployedPackageInfos = new ConcurrentBag<DeployedPackageInfo>();
-            logger.Info("Cleaning local cache");
+
+            string subPath = String.Empty;
             // RUN LOCAL CLEAN UP PROCESS
+            if (String.CompareOrdinal(buildsToWatch.SubBranch, "$/" + buildsToWatch.Project + "/" + buildsToWatch.Branch) == 0)
+            {
+                subPath = buildsToWatch.Branch;
+            }
+            else
+            {
+                subPath = buildsToWatch.SubBranch;
+            }
+
+            var directoryToClean = FileUtils.GetFormatedPathForBuild(serviceOptions.StagingFileShare, subPath);
+            logger.Info("Attempting to clean: " + directoryToClean);
             var cleanUpDirectories =
-                FileUtils.CleanUpDirectories(FileUtils.GetFormatedPathForBuild(serviceOptions.StagingFileShare,
-                    buildsToWatch.Branch, buildsToWatch.SubBranch), buildsToWatch.Retention, logger);
+                FileUtils.CleanUpDirectories(directoryToClean, buildsToWatch.Retention, logger);
 
             foreach (var cleanUpDirectory in cleanUpDirectories)
             {

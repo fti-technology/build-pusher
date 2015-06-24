@@ -338,34 +338,52 @@ namespace BuildDataDriver.tools
                         var localfullBranchPath = fullBranchPath;
                         var originalPath = localfullBranchPath;
                         var subProject = localfullBranchPath.Replace("$/" + buildsToWatchTarget.Project + "/" + buildsToWatchTarget.Branch + "/", "");
-
-                        if (!string.IsNullOrEmpty(subProject) && String.CompareOrdinal(originalPath, subProject) != 0)
+                        // Need unit test here
+                        if (!string.IsNullOrEmpty(subProject) )//&& String.CompareOrdinal(originalPath, subProject) != 0)
                         {
 
                             foreach (var targetBuild in BuildTarget.TargetBuilds)
                             {
                                 try
                                 {
-                                    string subProjectExpand = subProject.Replace("/", " ");
+                                    string subProjectExpand = string.Empty;
+                                    if(String.CompareOrdinal(originalPath, subProject) != 0)
+                                        subProjectExpand = subProject.Replace("/", " ");
+                                    else
+                                    {
+                                        subProjectExpand = buildsToWatchTarget.Branch;
+                                    }
                                     string definition = string.Format("{0} {1}", subProjectExpand, targetBuild);
-                                    var buildSpec = BuildService.CreateBuildDetailSpec(buildsToWatchTarget.Project,
+                                    try
+                                    {
+                                        var buildSpec = BuildService.CreateBuildDetailSpec(buildsToWatchTarget.Project,
                                         definition);
 
-                                    var buildDetails = BuildService.QueryBuilds(buildSpec).Builds;
-                                    if (buildDetails.Any())
-                                    {
-                                        Console.WriteLine("Found Build Spec");
+                                        var buildDetails = BuildService.QueryBuilds(buildSpec).Builds;
+                                        if (buildDetails.Any())
+                                        {
+                                            Logger.Info("Found Build Spec: " + buildSpec.DefinitionSpec.Name);
+                                        }
+                                        else
+                                        {
+                                            Logger.Info("No Details found for Build Spec: " + buildSpec.DefinitionSpec.Name);
+                                        }
+
+                                        // Add project to manifest if QueryBuilds didn't throw
+                                        // This consists of the original IBuildsToWatch data along with the IDynamicSourceDetails that provides the branch information
+                                        DynamicSourceDetails dynamicSourceDetails = new DynamicSourceDetails(buildsToWatchTarget.Project, buildsToWatchTarget.Branch, subProject, buildsToWatchTarget.Retention);
+
+                                        var any = projectBuildSpecs.Any(x => (x.Key.Branch == dynamicSourceDetails.Branch) && (x.Key.Project == dynamicSourceDetails.Project) && (x.Key.SubBranch == dynamicSourceDetails.SubBranch));
+
+
+                                        if (!any)
+                                            projectBuildSpecs.Add(dynamicSourceDetails, buildsToWatchTarget);
                                     }
-
-                                    // Add project to manifest if QueryBuilds didn't throw
-                                    // This consists of the original IBuildsToWatch data along with the IDynamicSourceDetails that provides the branch information
-                                    DynamicSourceDetails dynamicSourceDetails = new DynamicSourceDetails(buildsToWatchTarget.Project, buildsToWatchTarget.Branch, subProject, buildsToWatchTarget.Retention);
-
-                                    var any = projectBuildSpecs.Any(x => (x.Key.Branch == dynamicSourceDetails.Branch) && (x.Key.Project == dynamicSourceDetails.Project) && (x.Key.SubBranch == dynamicSourceDetails.SubBranch));
-
-
-                                    if (!any)
-                                        projectBuildSpecs.Add(dynamicSourceDetails, buildsToWatchTarget);
+                                    catch (Exception ex)
+                                    {
+                                        Logger.InfoException("BUILD SPEC NOT FOUND EXCEPTION HANDLED", ex);
+                                    }
+                                    
                                 }
                                 catch (Exception ex)
                                 {
@@ -411,10 +429,14 @@ namespace BuildDataDriver.tools
         {
             ConcurrentDictionary<IBuildDefinition, IBuildDetail> concurrentDictionary = new ConcurrentDictionary<IBuildDefinition, IBuildDetail>();
             //foreach (var targetBuild in BuildTarget.TargetBuilds)
+            // NEED UNIT TESTING!
             Parallel.ForEach(BuildTarget.TargetBuilds, targetBuild =>
             {
                 IBuildDefinition buildDefinition = null;
-                string subProjectExpand = dynamicSourceDetails.SubBranch.Replace("/", " ");
+                
+                var subProjectExpand = String.CompareOrdinal(dynamicSourceDetails.SubBranch,
+                    "$/" +  dynamicSourceDetails.Project + "/" + dynamicSourceDetails.Branch) == 0 ? dynamicSourceDetails.Branch : dynamicSourceDetails.SubBranch.Replace("/", " ");
+                
                 string definition = string.Format("{0} {1}", subProjectExpand, targetBuild);
                 try
                 {
@@ -428,7 +450,7 @@ namespace BuildDataDriver.tools
                 }
                 catch (Exception ex)
                 {
-                    Logger.InfoException("Exception in GetBuildDetail", ex);
+                    Logger.InfoException("Exception in GetBuildDetail HANDLED", ex);
                     // TODO; LOG MAJOR ERROR
 
                 }

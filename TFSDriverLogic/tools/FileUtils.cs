@@ -274,6 +274,10 @@ namespace BuildDataDriver.tools
                 logger.Info("No directories to clean");
                 return removedItesmList;
             }
+            else
+            {
+                
+            }
 
             cnt = cnt - numberOfDirectoriesToKeep;
 
