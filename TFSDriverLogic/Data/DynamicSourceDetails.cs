@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BuildDataDriver.Interfaces;
+using Microsoft.TeamFoundation.Build.Client;
 
 namespace BuildDataDriver.Data
 {
@@ -25,14 +26,16 @@ namespace BuildDataDriver.Data
         public string Branch { get; internal set; }
         public string SubBranch { get; internal set; }
         public int Retention { get; internal set; }
+        public IBuildDetailSpec BuildSpec { get; set; }
 
 
-        public DynamicSourceDetails(string project, string branch, string subBranch, int numberOfBuildsToRetain)
+        public DynamicSourceDetails(string project, string branch, string subBranch, int numberOfBuildsToRetain, IBuildDetailSpec buildSpec)
         {
             Project = project;
             Branch = branch;
             SubBranch = subBranch;
             Retention = numberOfBuildsToRetain;
+            BuildSpec = buildSpec;
         }
 
           public bool Equals(IDynamicSourceDetails x, IDynamicSourceDetails y)

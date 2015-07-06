@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.TeamFoundation.Build.Client;
 
 namespace BuildDataDriver.Interfaces
 {
@@ -12,5 +13,6 @@ namespace BuildDataDriver.Interfaces
         string Branch { get; }
         string SubBranch { get; }
         int Retention { get; }
+        IBuildDetailSpec BuildSpec { get; set; }
     }
 }

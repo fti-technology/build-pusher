@@ -28,7 +28,12 @@ namespace BuildDataDriver.tools
         {
             //dest/branch/version
             var version = buildInformation.GetDeploymentVersionNumber();
-            string[] paths = { dest, dynamicSourceDetails.SubBranch, version };
+
+            var branchTarget = String.CompareOrdinal(dynamicSourceDetails.SubBranch,
+                "$/" + dynamicSourceDetails.Project + "/" + dynamicSourceDetails.Branch) == 0 ? dynamicSourceDetails.Branch : dynamicSourceDetails.SubBranch;
+
+            string[] paths = new string[] { dest, branchTarget, version };
+            
             return Path.Combine(paths);
         }
 
@@ -41,8 +46,11 @@ namespace BuildDataDriver.tools
         /// <returns></returns>
         public static string GetFormatedPathForBuild(string dest, string branch, string subBranch)
         {
-            //dest/branch
-            string[] paths = { dest, branch, subBranch };
+
+            var branchTarget = String.CompareOrdinal(subBranch,
+                "$/" + branch + "/" + subBranch) == 0 ? branch : subBranch;
+
+            var paths = new string[] { dest, branchTarget };
             return Path.Combine(paths);
         }
 

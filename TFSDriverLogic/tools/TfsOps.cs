@@ -15,6 +15,7 @@ using Microsoft.TeamFoundation.VersionControl.Client;
 using Newtonsoft.Json;
 using NLog;
 using TFSDriverLogic.Data;
+using BuildDataDriver.Extensions;
 
 namespace BuildDataDriver.tools
 {
@@ -129,6 +130,13 @@ namespace BuildDataDriver.tools
             return GetBuilds(dynamicSourceDetails);
         }
 
+        public static void GetSomeBD(Uri _tfsUri)
+        {
+            var tfsTeamProjectCollection = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(_tfsUri);
+            var buildServer = (IBuildServer)tfsTeamProjectCollection.GetService(typeof(IBuildServer));
+        }
+
+
         /// <summary>
         /// Used to query for the last success build on a TFS project/branch.  Try to initially go back a week, but still grab last successful.
         /// </summary>
@@ -147,7 +155,7 @@ namespace BuildDataDriver.tools
                 var subProject = TFSFullProjectPath.Substring(TFSFullProjectPath.LastIndexOf('/')).Replace("/", "");
                 string tmpStr = TFSFullProjectPath.Replace("$/", "");
                 string project = tmpStr.Substring(0, tmpStr.IndexOf("/", StringComparison.Ordinal));
-
+                //TODO - fix for projects that don't map from TFS source to build
 
                 foreach (var targetBuild in BuildTarget.TargetBuilds)
                 {
@@ -242,6 +250,63 @@ namespace BuildDataDriver.tools
         public List<string> GetBranchList(List<IBuildsToWatch> buildsToWatch)
         {
             return ListOfFilteredBranches(buildsToWatch, this._tfsUri);
+        }
+
+        /// <summary>
+        /// Pass in top level project name, Full TFS source path, and TFS server Uri and this function
+        /// will return a list of all build definitions that match the criteria.  This is good for when 
+        /// the TFS source name, doesn't match the Build definition.
+        /// </summary>
+        /// <param name="TFSProject"></param>
+        /// <param name="TFSSourcePath"></param>
+        /// <param name="_tfsUri"></param>
+        /// <returns></returns>
+        private List<IBuildDefinition> FindBuildDefintions(string TFSProject, string TFSSourcePath, Uri _tfsUri)
+        {
+            List<IBuildDefinition> list = new List<IBuildDefinition>();
+            var tfsTeamProjectCollection = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(_tfsUri);
+            var buildServer = (IBuildServer)tfsTeamProjectCollection.GetService(typeof(IBuildServer));
+
+            //Project Ringtail 
+
+            foreach (var buildDefinition in buildServer.QueryBuildDefinitions(TFSProject, QueryOptions.Definitions | QueryOptions.Workspaces))
+            {
+
+                if (buildDefinition.Workspace.Mappings.Any(workspaceMapping => workspaceMapping.ServerItem.Contains(TFSSourcePath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (!list.Contains(buildDefinition))
+                        list.Add(buildDefinition);
+                }
+
+            }
+            return list;
+        }
+        /// <summary>
+        /// Pass in top level project name, Full TFS source path, and TFS server Uri and this function
+        /// will return a list of all build definitions that match the criteria.  This is good for when 
+        /// the TFS source name, doesn't match the Build definition.
+        /// </summary>
+        /// <param name="TFSProject"></param>
+        /// <param name="TFSSourcePath"></param>
+        /// <param name="_tfsUri"></param>
+        /// <returns></returns>
+        private IBuildDefinition FindBuildDefintion(string TFSProject, string TFSSourcePath, Uri _tfsUri)
+        {
+            var tfsTeamProjectCollection = TfsTeamProjectCollectionFactory.GetTeamProjectCollection(_tfsUri);
+            var buildServer = (IBuildServer)tfsTeamProjectCollection.GetService(typeof(IBuildServer));
+
+            //Project Ringtail 
+
+            foreach (var buildDefinition in buildServer.QueryBuildDefinitions(TFSProject, QueryOptions.Definitions | QueryOptions.Workspaces))
+            {
+
+                if (buildDefinition.Workspace.Mappings.Any(workspaceMapping => workspaceMapping.ServerItem.Contains(TFSSourcePath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return buildDefinition;
+                }
+
+            }
+            return null;
         }
 
         /// <summary>
@@ -347,12 +412,21 @@ namespace BuildDataDriver.tools
                                 try
                                 {
                                     string subProjectExpand = string.Empty;
-                                    if(String.CompareOrdinal(originalPath, subProject) != 0)
+                                    if (String.CompareOrdinal(originalPath, subProject) != 0)
+                                    {
+                                        
+                                            subProjectExpand = subProject.Replace("/", " ");
+                                    }
+                                    else if (!originalPath.Contains(buildsToWatchTarget.Branch))
+                                    {
                                         subProjectExpand = subProject.Replace("/", " ");
-                                    else
+                                    }
+
+                                    if(string.IsNullOrEmpty(subProjectExpand))
                                     {
                                         subProjectExpand = buildsToWatchTarget.Branch;
                                     }
+
                                     string definition = string.Format("{0} {1}", subProjectExpand, targetBuild);
                                     try
                                     {
@@ -366,12 +440,33 @@ namespace BuildDataDriver.tools
                                         }
                                         else
                                         {
-                                            Logger.Info("No Details found for Build Spec: " + buildSpec.DefinitionSpec.Name);
+                                            // FUTURE OPTIMIZATION, make this call once per branch and cache results.  For now, only call when necessary
+                                            var buildDefinition = FindBuildDefintion(buildsToWatchTarget.Project, fullBranchPath, _tfsUri);
+                                            if (buildDefinition != null)
+                                            {
+                                                buildSpec = BuildService.CreateBuildDetailSpec(buildDefinition);
+                                                buildDetails = BuildService.QueryBuilds(buildSpec).Builds;
+                                                if (buildDetails.Any())
+                                                {
+                                                    Logger.Info("Found Build Spec: " + buildSpec.DefinitionSpec.Name);
+                                                }
+                                            }
+                                        }
+
+                                        if (!buildDetails.Any())
+                                        {
+                                            Logger.Info("No Details found for Build Spec: " +
+                                                           buildSpec.DefinitionSpec.Name);
+                                        }
+
+                                        if (buildSpec == null)
+                                        {
+                                            throw new Exception("Build SPEC NOT FOUND: " + definition);
                                         }
 
                                         // Add project to manifest if QueryBuilds didn't throw
                                         // This consists of the original IBuildsToWatch data along with the IDynamicSourceDetails that provides the branch information
-                                        DynamicSourceDetails dynamicSourceDetails = new DynamicSourceDetails(buildsToWatchTarget.Project, buildsToWatchTarget.Branch, subProject, buildsToWatchTarget.Retention);
+                                        DynamicSourceDetails dynamicSourceDetails = new DynamicSourceDetails(buildsToWatchTarget.Project, buildsToWatchTarget.Branch, subProject, buildsToWatchTarget.Retention, buildSpec);
 
                                         var any = projectBuildSpecs.Any(x => (x.Key.Branch == dynamicSourceDetails.Branch) && (x.Key.Project == dynamicSourceDetails.Project) && (x.Key.SubBranch == dynamicSourceDetails.SubBranch));
 
@@ -434,15 +529,12 @@ namespace BuildDataDriver.tools
             {
                 IBuildDefinition buildDefinition = null;
                 
-                var subProjectExpand = String.CompareOrdinal(dynamicSourceDetails.SubBranch,
-                    "$/" +  dynamicSourceDetails.Project + "/" + dynamicSourceDetails.Branch) == 0 ? dynamicSourceDetails.Branch : dynamicSourceDetails.SubBranch.Replace("/", " ");
-                
-                string definition = string.Format("{0} {1}", subProjectExpand, targetBuild);
                 try
                 {
-                    //var definition = string.Format("{0} {1}", dynamicSourceDetails.SubBranch, targetBuild);
-                    buildDefinition = buildService.GetBuildDefinition(BuildTarget.TargetProject, definition);
-                    //BuildTarget.TargetBranch + " " + targetBuild);
+                  // Use the cached IBuildDetailSpec
+                  buildDefinition =  buildService.GetBuildDefinition(dynamicSourceDetails.BuildSpec.DefinitionSpec.TeamProject,
+                        dynamicSourceDetails.BuildSpec.DefinitionSpec.Name);
+                    
                     Uri lastKnownGoodBuild = buildDefinition.LastGoodBuildUri;
 
                     IBuildDetail myBuildDetail = buildService.GetBuild(lastKnownGoodBuild);
@@ -452,7 +544,6 @@ namespace BuildDataDriver.tools
                 {
                     Logger.InfoException("Exception in GetBuildDetail HANDLED", ex);
                     // TODO; LOG MAJOR ERROR
-
                 }
 
                 if (buildDefinition == null || buildDefinition.LastGoodBuildUri == null)
