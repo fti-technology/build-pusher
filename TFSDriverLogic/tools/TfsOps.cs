@@ -523,18 +523,22 @@ namespace BuildDataDriver.tools
             IDynamicSourceDetails dynamicSourceDetails)
         {
             ConcurrentDictionary<IBuildDefinition, IBuildDetail> concurrentDictionary = new ConcurrentDictionary<IBuildDefinition, IBuildDetail>();
-            //foreach (var targetBuild in BuildTarget.TargetBuilds)
-            // NEED UNIT TESTING!
-            Parallel.ForEach(BuildTarget.TargetBuilds, targetBuild =>
+            foreach (var targetBuild in BuildTarget.TargetBuilds)
             {
+                // NEED UNIT TESTING!
+                // Parallel.ForEach(BuildTarget.TargetBuilds, targetBuild =>
+                // {
                 IBuildDefinition buildDefinition = null;
-                
+                var subProjectExpand = String.CompareOrdinal(dynamicSourceDetails.SubBranch,
+                                   "$/" + dynamicSourceDetails.Project + "/" + dynamicSourceDetails.Branch) == 0 ? dynamicSourceDetails.Branch : dynamicSourceDetails.SubBranch.Replace("/", " ");
+
+                string definition = string.Format("{0} {1}", subProjectExpand, targetBuild);
                 try
                 {
-                  // Use the cached IBuildDetailSpec
-                  buildDefinition =  buildService.GetBuildDefinition(dynamicSourceDetails.BuildSpec.DefinitionSpec.TeamProject,
-                        dynamicSourceDetails.BuildSpec.DefinitionSpec.Name);
-                    
+                    //var definition = string.Format("{0} {1}", dynamicSourceDetails.SubBranch, targetBuild);
+                    buildDefinition = buildService.GetBuildDefinition(BuildTarget.TargetProject, definition);
+                    //BuildTarget.TargetBranch + " " + targetBuild);
+
                     Uri lastKnownGoodBuild = buildDefinition.LastGoodBuildUri;
 
                     IBuildDetail myBuildDetail = buildService.GetBuild(lastKnownGoodBuild);
@@ -552,7 +556,8 @@ namespace BuildDataDriver.tools
                         BuildTarget.TargetProject, BuildTarget.TargetBranch, targetBuild);
                 }
 
-            });
+            }
+            //});
 
            // foreach (var buildDefinition in concurrentBag)
             foreach (var buildTargetItem in concurrentDictionary)
@@ -578,7 +583,11 @@ namespace BuildDataDriver.tools
                     buildPackageInformation.BuildLinks.Add(buildTargetItem.Key.LastGoodBuildUri);
 
                 var tempVar = buildPackageInformation.InstallationComponents;
-                buildDropPaths = BuildUpDropPaths(dropLocation, dynamicSourceDetails.SubBranch,
+
+                var branchTarget = dynamicSourceDetails.SubBranch.Contains("$")
+                    ? dynamicSourceDetails.Branch
+                    : dynamicSourceDetails.SubBranch;
+                buildDropPaths = BuildUpDropPaths(dropLocation, branchTarget,
                     ref tempVar, buildTargetItem.Value.BuildNumber);
                 buildPackageInformation.InstallationComponents = tempVar;
 
@@ -624,6 +633,11 @@ namespace BuildDataDriver.tools
             try
             {
                 filePaths = Directory.EnumerateFiles(dropLoc, "*.exe", SearchOption.AllDirectories);
+                Logger.Info("Found {0} files at drop loc: {1}", filePaths.Count(),dropLoc);
+                foreach (var filePath in filePaths)
+                {
+                    Logger.Info("File: {0}", filePath);
+                }
             }
             catch (Exception)
             {
