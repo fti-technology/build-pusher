@@ -35,6 +35,15 @@ namespace FTIPusher.Util
         public List<string> FilterInclude { get; set; }
     }
 
+    public class ExternalMirror : IExternalMirror
+    {
+        public string SourceDirectory { get; set; }
+        public int UpdateFrequencyInMinutes { get; set; }
+        public List<string> MirrorDestinations { get; set; }
+    }
+
+ 
+
     public class ServiceOptionsRoot
     {
         public string BuildServer { get; set; }
@@ -53,17 +62,18 @@ namespace FTIPusher.Util
         public List<FtpLocation> FTPLocations { get; set; }
         public List<string> HTTPShares { get; set; }
         public List<BuildsToWatch> BuildsToWatch { get; set; }
+        public List<ExternalMirror> ExternalMirror { get; set; }
     }
 
     public class ServiceOptions
     {
         
-        public static ServiceOptionsRoot ReadJsonConfigOptions(Logger logger)
+        public static ServiceOptionsRoot ReadJsonConfigOptions(ILogger logger)
         {
             return ReadJsonConfigOptions(logger, null);
         }
 
-        public static ServiceOptionsRoot ReadJsonConfigOptions(Logger logger, string optionsFileDirectory)
+        public static ServiceOptionsRoot ReadJsonConfigOptions(ILogger logger, string optionsFileDirectory)
         {
             string location = null;
 
@@ -100,7 +110,7 @@ namespace FTIPusher.Util
             }
             catch (System.Exception exception)
             {
-                logger.Info("Exception reading options", exception);
+                logger.Info(exception, "Reading options");                
             }
 
             return null;

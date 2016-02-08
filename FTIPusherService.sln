@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildDataDriver", "TFSDriverLogic\BuildDataDriver.csproj", "{3A48292D-43A0-4254-A92C-DE1D90B896C8}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PusherDataLogging", "ExternalUtils\PusherDataLogging.csproj", "{B5AB15C8-A361-484B-91ED-4EE7EA6AD01F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Components", "Components", "{B35D4CC6-49F9-4DF9-9391-8CE3B0054B2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildDataDriverTest", "BuildDataDriverTest\BuildDataDriverTest.csproj", "{D5BFA64F-05EE-4116-844B-33A96BF50D01}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +66,18 @@ Global
 		{B5AB15C8-A361-484B-91ED-4EE7EA6AD01F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B5AB15C8-A361-484B-91ED-4EE7EA6AD01F}.Release|x64.ActiveCfg = Release|Any CPU
 		{B5AB15C8-A361-484B-91ED-4EE7EA6AD01F}.Release|x86.ActiveCfg = Release|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Debug|x64.Build.0 = Debug|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Debug|x86.Build.0 = Debug|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|x64.ActiveCfg = Release|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|x64.Build.0 = Release|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|x86.ActiveCfg = Release|Any CPU
+		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

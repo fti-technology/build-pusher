@@ -47,6 +47,17 @@
             "Retention": "0",
             "FilterInclude": [ "Hotfix", "Service Pack", "Only Includ path that end with the filters" ]
         }
-    ]
+    ],
+     "ExternalMirror": [
+        {
+            "SourceDirectory": "D:\\somesource1",
+            "UpdateFrequencyInMinutes": 3,
+            "MirrorDestinations": ["\\\\localhost\\TESTSHARE\\Builds2", "\\\\localhost\\TESTSHARE\\Builds3" ]
+        },
+        {
+            "SourceDirectory": "E:\\somerource2",
+            "UpdateFrequencyInMinutes": 15,
+            "MirrorDestinations": ["\\\\localhost\\TESTSHARE\\Builds2", "\\\\localhost\\TESTSHARE\\Builds3" ]
+        }]
 }
    
