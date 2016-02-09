@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+
+using BuildDataDriver.Data;
 using BuildDataDriver.Interfaces;
 
 namespace BuildDataDriver.tools
@@ -64,8 +66,8 @@ namespace BuildDataDriver.tools
 
             foreach (var installationComponentKvp in buildInformation.InstallationComponents)
             {
-
-                var fileName = Path.GetFileName(installationComponentKvp.Value.Value);
+                var installDetailTemp = installationComponentKvp.Value;
+                var fileName = Path.GetFileName(installDetailTemp.InstallDetails.Value);
                 var remotePath = Uri.EscapeUriString(uri + fileName) + propertyDecoratedUri;
                 RunCurlUpload(User, Pw, Path.Combine(localArtifactRootDir, fileName), remotePath);
                 

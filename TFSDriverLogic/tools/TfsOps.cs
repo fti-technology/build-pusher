@@ -206,7 +206,7 @@ namespace BuildDataDriver.tools
                 List<string> dropPaths = new List<string>();
                 if (buildRecords != null)
                 {
-                    var intallationComponents = new Dictionary<string, KeyValuePair<string, string>>();
+                    var intallationComponents = new Dictionary<string, IInstallDetail>();
                     foreach (var buildRecord in buildRecords)
                     {
                         dropPaths.AddRange(BuildUpDropPaths(buildRecord.DropLocation, branch,
@@ -224,7 +224,7 @@ namespace BuildDataDriver.tools
             List<string> dropPaths = new List<string>();
             if (buildRecords != null)
             {
-                var intallationComponents = new Dictionary<string, KeyValuePair<string, string>>();
+                var intallationComponents = new Dictionary<string, IInstallDetail>();
                 foreach (var buildRecord in buildRecords)
                 {
                     dropPaths.AddRange(BuildUpDropPaths(buildRecord.DropLocation, branch,
@@ -618,14 +618,16 @@ namespace BuildDataDriver.tools
         }
 
         internal IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch,
-            ref Dictionary<string, KeyValuePair<string, string>> setupPackageList, string buildNumber)
+            ref Dictionary<string, IInstallDetail> setupPackageList, string buildNumber)
         {
             return BuildUpDropPaths(dropLoc, branch, ref setupPackageList, buildNumber, true);
         }
 
-        private static IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, ref Dictionary<string, KeyValuePair<string, string>> setupPackageList, string buildNumber, bool internalCall)
+        private static IEnumerable<string> BuildUpDropPaths(string dropLoc, string branch, ref Dictionary<string, IInstallDetail>  setupPackageList, string buildNumber, bool internalCall)
         {
-            Dictionary<string, KeyValuePair<string, string>> setupPackageListTemp = new Dictionary<string, KeyValuePair<string, string>>();
+            //ref Dictionary<string, IInstallDetail> setupPackageList
+            //Dictionary<string, KeyValuePair<string, string>> setupPackageListTemp = new Dictionary<string, KeyValuePair<string, string>>();
+            var setupPackageListTemp = new Dictionary<string, IInstallDetail>();
             List<string> componentsRawList = new List<string>();
             IEnumerable<string> filePaths;
             if (setupPackageList.Any())
@@ -653,9 +655,18 @@ namespace BuildDataDriver.tools
                 var fileName = Path.GetFileNameWithoutExtension(file).ToUpperInvariant();
                 foreach (var manifestItem in manifestBranchList.Where(manifestItem => fileName.ToUpperInvariant().StartsWith(manifestItem.ToUpperInvariant())).Where(manifestItem => !setupPackageListTemp.ContainsKey(fileName)))
                 {
+                    long fileSize = 0;
+                    DateTime creationDateTime;
+                    try
+                    {
+                        FileInfo f = new FileInfo(file);
+                        fileSize = f.Length;
+                    }
+                    catch (Exception){}
+                    
                     lock (sync)
                     {
-                        setupPackageListTemp.Add(fileName, new KeyValuePair<string, string>(buildNumber, file));
+                        setupPackageListTemp.Add(fileName, new InstallDetail(){ InstallDetails = new KeyValuePair<string, string>(buildNumber, file), SizeInBytes = fileSize.ToString()});  //new KeyValuePair<string, string>(buildNumber, file));
                         componentsRawList.Add(file);
                     }
                     Logger.Info("Drop path added: {0} - for Branch: {1}, Build Number: {2}", file, branch, buildNumber);

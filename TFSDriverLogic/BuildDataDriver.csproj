@@ -153,6 +153,7 @@
     <Compile Include="Data\BuildPackageInformation.cs" />
     <Compile Include="Data\DataBaseMgr.cs" />
     <Compile Include="Data\DynamicSourceDetails.cs" />
+    <Compile Include="Interfaces\IInstallDetail.cs" />
     <Compile Include="Extensions\StringExt.cs" />
     <Compile Include="Interfaces\IBuildPackageDetail.cs" />
     <Compile Include="Interfaces\IBuildPackageInformation.cs" />

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -51,12 +52,15 @@ namespace FTIPusher
                 throw new TaskCanceledException("Invalid JSon data options");
             }
 
-
-
             try
             {
                 Logger.Info("Starting service Polling");
-                DoWork();
+                if(_readJsonConfigOptions.ExternalMirror.MirrorList != null && _readJsonConfigOptions.ExternalMirror.MirrorList.Any())
+                    DoWork(true);
+                else
+                {
+                    DoWork();
+                }
             }
             catch (TaskCanceledException exception) 
             {
@@ -64,11 +68,22 @@ namespace FTIPusher
             }
         }
 
-        public async void DoWork()
+        /// <summary>
+        /// Entry point to launch the polling activities
+        /// </summary>
+        public async void DoWork(bool runSecondPoll=false)
         {
             Task t1 = PollMain();
-            Task t2 = PollMirror();
-            await Task.WhenAll(t1, t2);
+            List<Task> taskList = new List<Task>() {t1};
+            if (runSecondPoll)
+            {
+                Task t2 = PollMirror();
+                taskList.Add(t2);
+            }
+
+            Task[] tasksList = taskList.ToArray();
+
+            await Task.WhenAll(tasksList);
         }
 
 
@@ -89,6 +104,10 @@ namespace FTIPusher
             Logger.Info("{0} serviced stopped", LogSource);
         }
 
+        /// <summary>
+        /// Run the secondary polling loop
+        /// </summary>
+        /// <returns></returns>
         private async Task PollMirror()
         {
             eventLog1.WriteEntry("Service Poll logic Mirror");
@@ -139,6 +158,10 @@ namespace FTIPusher
             }
         }
 
+        /// <summary>
+        /// Run the polling loop for the main logic branch
+        /// </summary>
+        /// <returns></returns>
         private async Task PollMain()
         {
             eventLog1.WriteEntry("Service Poll logic Main");

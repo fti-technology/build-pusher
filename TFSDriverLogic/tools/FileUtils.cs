@@ -161,7 +161,7 @@ namespace BuildDataDriver.tools
 
             foreach (var file in fileList)
             {
-                RunXCopyProcess(dest, logger, file);
+                RunXCopyProcess(dest, logger, file.Value.Value);
             }
         }
 
@@ -192,17 +192,46 @@ namespace BuildDataDriver.tools
             Parallel.ForEach(fileList, file =>
             {
                 logger.Info("XCopy file: " + file + " dest: " + dest + "  count: " + count + "/" + total);
-                RunXCopyProcess(dest, logger, file);
+                RunXCopyProcess(dest, logger, file.Value.Value);
                 Interlocked.Increment(ref count);
             });
             logger.Info("XCopy file completed count: " + count + "/" + total);
             return count;
         }
 
-        private static void RunXCopyProcess(string dest, Logger logger, KeyValuePair<string, KeyValuePair<string, string>> file)
+        public static int XCopyFilesParallel(string dest, Dictionary<string, IInstallDetail> fileList, Logger logger)
+        {
+            var count = 0;
+            try
+            {
+                if (!Directory.Exists(dest))
+                {
+                    Directory.CreateDirectory(dest);
+                    logger.Info("Directory created: {0}", dest);
+                }
+            }
+            catch (Exception ex)
+            {
+                // ignored
+                logger.InfoException("XCopyFilesParallel failed: SOURCE: " + dest, ex);
+            }
+
+            var total = fileList.Count;
+            Parallel.ForEach(fileList.Values, file =>
+                {
+                    var copyTarget = file.InstallDetails.Value;
+                logger.Info("XCopy file: " + copyTarget + " dest: " + dest + "  count: " + count + "/" + total);
+                RunXCopyProcess(dest, logger, copyTarget);
+                Interlocked.Increment(ref count);
+            });
+            logger.Info("XCopy file completed count: " + count + "/" + total);
+            return count;
+        }
+
+        private static void RunXCopyProcess(string dest, Logger logger, string file)
         {
             const string processExe = "xcopy.exe";
-            var source = file.Value.Value;
+            var source = file;
             string processCommandLine = "\"" + source + "\" " + "\"" + dest + "\"" + " /j /c /y";
 
             var process = ProcessRunner.RunProcess(processExe, processCommandLine);
@@ -243,7 +272,7 @@ namespace BuildDataDriver.tools
             }
             else
             {
-                logger.Error("XCopyFiles failed to exit : SOURCE: {0} - Dest {1}", file.Value.Value, dest);
+                logger.Error("XCopyFiles failed to exit : SOURCE: {0} - Dest {1}", source, dest);
                 try
                 {
                     process.Kill();

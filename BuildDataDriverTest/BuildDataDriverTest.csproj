@@ -65,10 +65,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ExternalUtils\PusherDataLogging.csproj">
-      <Project>{b5ab15c8-a361-484b-91ed-4ee7ea6ad01f}</Project>
-      <Name>PusherDataLogging</Name>
-    </ProjectReference>
     <ProjectReference Include="..\TFSDriverLogic\BuildDataDriver.csproj">
       <Project>{3a48292d-43a0-4254-a92c-de1d90b896c8}</Project>
       <Name>BuildDataDriver</Name>

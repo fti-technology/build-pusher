@@ -33,8 +33,10 @@ namespace BuildDataDriver.Data
         [DataMember]
         public List<Uri> BuildLinks { get; set; }
 
+        
+        // public Dictionary<string, KeyValuePair<string, string>> InstallationComponents { get; set; }
         [DataMember]
-        public Dictionary<string, KeyValuePair<string, string>> InstallationComponents { get; set; }
+        public Dictionary<string, IInstallDetail> InstallationComponents { get; set; }
 
         [DataMember]
         public List<IBuildPackageDetail> BuildDetails { get; set; }
@@ -44,7 +46,7 @@ namespace BuildDataDriver.Data
             BuildDetails = new List<IBuildPackageDetail>();
             BuildLinks = new List<Uri>();
             SourceRevs = new List<string>();
-            InstallationComponents = new Dictionary<string, KeyValuePair<string, string>>();
+            InstallationComponents = new Dictionary<string, IInstallDetail>();
             WatchBuild = true;
         }
 
@@ -57,7 +59,26 @@ namespace BuildDataDriver.Data
         {
             return this.BuildDetails.Max(x => x.Completion);
         }
-    }    
+    }
+
+    public class InstallDetail : IInstallDetail
+    {
+        public InstallDetail()
+        {
+            InstallDetails = new KeyValuePair<string, string>();
+        }
+    
+
+        public KeyValuePair<string, string> InstallDetails
+        {
+            get;
+            set;
+        }
+        public string SizeInBytes { get; set; }
+
+        public string CreationTimeUtc { get; set; }
+    }
+
 
     public class BuildPackageDetail : IBuildPackageDetail
     {

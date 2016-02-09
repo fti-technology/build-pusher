@@ -57,6 +57,52 @@ namespace FTIPusher
             _httpHelper = new HTTPHelper(this);
         }
 
+        /// <summary>
+        /// Basically Mirror the source to the destinations in a parallel loop
+        /// </summary>
+        /// <param name="serviceOptions"></param>
+        /// <returns></returns>
+        public bool RunExternalMirrorLogic(ServiceOptionsRoot serviceOptions)
+        {
+            if (StopUpdates == true)
+            {
+                HasStopped = true;
+                return false;
+            }
+
+
+            Parallel.ForEach(serviceOptions.ExternalMirror.MirrorList, mirrorLocation =>
+            {
+                List<Task> tasks = new List<Task>();
+
+                LimitedConcurrencyLevelTaskScheduler lcts = new LimitedConcurrencyLevelTaskScheduler(10);
+                TaskFactory factory = new TaskFactory(lcts);
+                _logger.Info("Processing Remote External Mirror : {0}", mirrorLocation);
+
+                DirectoryInfo di = new DirectoryInfo(mirrorLocation.SourceDirectory);
+                foreach (var mirrorDestination in mirrorLocation.MirrorDestinations)
+                {
+                    var destLocation = mirrorDestination;
+                    var soureLocation = di.FullName;
+                    Task t =
+                        factory.StartNew(
+                            () =>
+                                FileUtils.MirrorDirectory(soureLocation, destLocation, _logger, 0, _dataBaseLogDirPath),
+                            CancellationToken.None,
+                            TaskCreationOptions.LongRunning, lcts);
+                    tasks.Add(t);
+                }
+
+                _logger.Info("Location: {0} - Remote number of copies to perform for this item: {1}", mirrorLocation, tasks.Count);
+                Task.WaitAll(tasks.ToArray());
+                _logger.Info("Completed Processing of Remote External Mirror : {0}", mirrorLocation);
+            });
+
+            
+
+            return true;
+        }
+
         public bool RunPusherLogic(ServiceOptionsRoot serviceOptions)
         {
             if (StopUpdates == true)
@@ -396,6 +442,7 @@ namespace FTIPusher
             Guid g = Guid.NewGuid();
 
             _logger.Info("XCopy starting: " + strPath + " :: " + g);
+            
             var count = FileUtils.XCopyFilesParallel(strPath, buildInformation.InstallationComponents, _logger);
             var expectedCnt = buildInformation.InstallationComponents.Count;
             if (count != expectedCnt)
