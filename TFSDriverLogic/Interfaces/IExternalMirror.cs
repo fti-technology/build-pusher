@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FTIPusher.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +9,7 @@ namespace BuildDataDriver.Interfaces
 {
     public interface IExternalMirror
     {
-        string SourceDirectory { get; set; }
         int UpdateFrequencyInMinutes { get; set; }
-        List<string> MirrorDestinations { get; set; }
+        List<MirrorList> MirrorList { get; set; }
     }
 }

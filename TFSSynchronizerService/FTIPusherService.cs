@@ -50,16 +50,27 @@ namespace FTIPusher
                 Logger.Error("Json options file could not be loaded");
                 throw new TaskCanceledException("Invalid JSon data options");
             }
+
+
+
             try
             {
                 Logger.Info("Starting service Polling");
-                await Poll();
+                DoWork();
             }
             catch (TaskCanceledException exception) 
             {
                 Logger.InfoException("Exception - serviced stopped", exception);
             }
         }
+
+        public async void DoWork()
+        {
+            Task t1 = PollMain();
+            Task t2 = PollMirror();
+            await Task.WhenAll(t1, t2);
+        }
+
 
         protected override void OnPause()
         {
@@ -78,40 +89,91 @@ namespace FTIPusher
             Logger.Info("{0} serviced stopped", LogSource);
         }
 
-        private async Task Poll()
+        private async Task PollMirror()
         {
-            eventLog1.WriteEntry("Service Poll logic");
+            eventLog1.WriteEntry("Service Poll logic Mirror");
             serviceCoreLogic = new ServiceCoreLogic(Logger, _readJsonConfigOptions);
-            Logger.Info("Core Service Logic Created");
+            Logger.Info("Core Mirror Logic Created");
             CancellationToken cancellation = _cts.Token;
 
-            eventLog1.WriteEntry("Polling Frequency Set" + _readJsonConfigOptions.UpdateFrequencyInMinutes);
-            Logger.Info("Polling Frequency Set: {0}", _readJsonConfigOptions.UpdateFrequencyInMinutes);
+            int pollingFreq = _readJsonConfigOptions.ExternalMirror.UpdateFrequencyInMinutes;
+            eventLog1.WriteEntry("Mirror Polling Frequency Set" + pollingFreq);
+            Logger.Info("Mirror Polling Frequency Set: {0}", pollingFreq);
             TimeSpan[] intervals =
             {
                 TimeSpan.FromMinutes(0),
-                TimeSpan.FromMinutes(_readJsonConfigOptions.UpdateFrequencyInMinutes)
+                TimeSpan.FromMinutes(pollingFreq)
             };
+
             var index = 0;
-            Logger.Info("Core logic loop started...");
+            Logger.Info("Mirror logic loop started...");
             while (true)
             {
                 await Task.Delay(intervals[index], cancellation);
                 Logger.Info("Interval fired");
                 try
                 {
-                    Logger.Info("Running Core Logic");
+                    Logger.Info("Running Mirror Loop Logic");
                     bool ret = await Task.Run(() => serviceCoreLogic.RunPusherLogic(_readJsonConfigOptions));
                     if (serviceCoreLogic.HasStopped)
                     {
-                        Logger.Info("Running Core Complete - Stop requested");
+                        Logger.Info("Running Mirror loop Complete - Stop requested");
                         break;
                     }
 
                     if (index == 0)
                         index = 1;
 
-                    Logger.Info("Running Core Complete");
+                    Logger.Info("Running Mirror loop Complete");
+                }
+                catch
+                {
+                    // rerun on exception
+                    index = 0;
+                }
+
+                if (cancellation.IsCancellationRequested)
+                {
+                    break;
+                }
+            }
+        }
+
+        private async Task PollMain()
+        {
+            eventLog1.WriteEntry("Service Poll logic Main");
+            serviceCoreLogic = new ServiceCoreLogic(Logger, _readJsonConfigOptions);
+            Logger.Info("Core Service Logic Created");
+            CancellationToken cancellation = _cts.Token;
+
+            int pollingFreq = _readJsonConfigOptions.ExternalMirror.UpdateFrequencyInMinutes;
+            eventLog1.WriteEntry("Main Polling Frequency Set" + pollingFreq);
+            Logger.Info("Main Polling Frequency Set: {0}", pollingFreq);
+            TimeSpan[] intervals =
+            {
+                TimeSpan.FromMinutes(0),
+                TimeSpan.FromMinutes(pollingFreq)
+            };
+            var index = 0;
+            Logger.Info("Main logic loop started...");
+            while (true)
+            {
+                await Task.Delay(intervals[index], cancellation);
+                Logger.Info("Interval fired");
+                try
+                {
+                    Logger.Info("Running Main Loop Logic");
+                    bool ret = await Task.Run(() => serviceCoreLogic.RunPusherLogic(_readJsonConfigOptions));
+                    if (serviceCoreLogic.HasStopped)
+                    {
+                        Logger.Info("Running Main Loop Complete - Stop requested");
+                        break;
+                    }
+
+                    if (index == 0)
+                        index = 1;
+
+                    Logger.Info("Running Main loop Complete");
                 }
                 catch
                 {

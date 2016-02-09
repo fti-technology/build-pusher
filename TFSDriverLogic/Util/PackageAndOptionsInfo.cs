@@ -35,14 +35,17 @@ namespace FTIPusher.Util
         public List<string> FilterInclude { get; set; }
     }
 
-    public class ExternalMirror : IExternalMirror
+    public class MirrorList
     {
         public string SourceDirectory { get; set; }
-        public int UpdateFrequencyInMinutes { get; set; }
         public List<string> MirrorDestinations { get; set; }
     }
 
- 
+    public class ExternalMirror : IExternalMirror
+    {
+        public int UpdateFrequencyInMinutes { get; set; }
+        public List<MirrorList> MirrorList { get; set; }
+    }
 
     public class ServiceOptionsRoot
     {
@@ -62,7 +65,7 @@ namespace FTIPusher.Util
         public List<FtpLocation> FTPLocations { get; set; }
         public List<string> HTTPShares { get; set; }
         public List<BuildsToWatch> BuildsToWatch { get; set; }
-        public List<ExternalMirror> ExternalMirror { get; set; }
+        public ExternalMirror ExternalMirror { get; set; }
     }
 
     public class ServiceOptions
