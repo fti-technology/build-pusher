@@ -55,10 +55,14 @@ namespace FTIPusher
             try
             {
                 Logger.Info("Starting service Polling");
-                if(_readJsonConfigOptions.ExternalMirror.MirrorList != null && _readJsonConfigOptions.ExternalMirror.MirrorList.Any())
+                if (_readJsonConfigOptions.ExternalMirror != null)
+                {
+                    Logger.Info("Starting service Polling in Dual Mode");
                     DoWork(true);
+                }
                 else
                 {
+                    Logger.Info("Starting service Polling in Single Mode");
                     DoWork();
                 }
             }
@@ -133,7 +137,7 @@ namespace FTIPusher
                 try
                 {
                     Logger.Info("Running Mirror Loop Logic");
-                    bool ret = await Task.Run(() => serviceCoreLogic.RunPusherLogic(_readJsonConfigOptions));
+                    bool ret = await Task.Run(() => serviceCoreLogic.RunExternalMirrorLogic(_readJsonConfigOptions));
                     if (serviceCoreLogic.HasStopped)
                     {
                         Logger.Info("Running Mirror loop Complete - Stop requested");

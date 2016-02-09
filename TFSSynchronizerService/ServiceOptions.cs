@@ -77,7 +77,7 @@ namespace FTIPusher
 
                 LimitedConcurrencyLevelTaskScheduler lcts = new LimitedConcurrencyLevelTaskScheduler(10);
                 TaskFactory factory = new TaskFactory(lcts);
-                _logger.Info("Processing Remote External Mirror : {0}", mirrorLocation);
+                _logger.Info("Processing Remote External Mirror : {0}", mirrorLocation.SourceDirectory);
 
                 DirectoryInfo di = new DirectoryInfo(mirrorLocation.SourceDirectory);
                 foreach (var mirrorDestination in mirrorLocation.MirrorDestinations)
