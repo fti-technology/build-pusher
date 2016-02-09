@@ -169,7 +169,7 @@ namespace FTIPusher
             Logger.Info("Core Service Logic Created");
             CancellationToken cancellation = _cts.Token;
 
-            int pollingFreq = _readJsonConfigOptions.ExternalMirror.UpdateFrequencyInMinutes;
+            int pollingFreq = _readJsonConfigOptions.UpdateFrequencyInMinutes;
             eventLog1.WriteEntry("Main Polling Frequency Set" + pollingFreq);
             Logger.Info("Main Polling Frequency Set: {0}", pollingFreq);
             TimeSpan[] intervals =

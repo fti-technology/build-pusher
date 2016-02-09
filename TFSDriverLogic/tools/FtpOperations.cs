@@ -266,13 +266,36 @@ namespace BuildDataDriver.tools
                     // Synchronize files
                     Console.WriteLine(source);
                     Console.WriteLine(dest);
+                    
                     SynchronizationResult synchronizationResult =
-                        session.SynchronizeDirectories(SynchronizationMode.Remote, source, dest, true, true, SynchronizationCriteria.Either);
+                        session.SynchronizeDirectories(SynchronizationMode.Remote, source, dest, true, true, SynchronizationCriteria.Either, new TransferOptions { TransferMode = TransferMode.Automatic });
                     _logger.Info("FTP UPLOAD COMPLETE - SERVER $$$ {0} $$ {1} $$ Source: {2} - Dest: {3}", ServerName, guid, source, dest);
 
                     try
                     {
-                        //synchronizationResult.Check();
+                        _logger.Info("synchronizationResult {0} - Removals: ", guid);
+                        try
+                        {
+                            foreach (var removal in synchronizationResult.Removals)
+                            {
+                                    _logger.Info("Removed {0} - Guid: ", removal, guid);
+                                
+                            }
+                        }
+                        catch (Exception){}
+
+                        _logger.Info("synchronizationResult {0} - Uploads: ", guid);
+                        try
+                        {
+                            foreach (var upload in synchronizationResult.Uploads)
+                            {
+                                _logger.Info("Upload {0} - Guid: ", upload, guid);
+
+                            }
+                        }
+                        catch (Exception) { }
+
+
                     }
                     catch (Exception exception)
                     {
