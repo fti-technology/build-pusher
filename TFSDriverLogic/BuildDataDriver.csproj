@@ -169,6 +169,8 @@
     <Compile Include="tools\RestUploadManager.cs" />
     <Compile Include="tools\TfsOps.cs" />
     <Compile Include="Util\Helper.cs" />
+    <Compile Include="Interfaces\IMirrorList.cs" />
+    <Compile Include="Interfaces\IFtpDestination.cs" />
     <Compile Include="Util\PackageAndOptionsInfo.cs" />
   </ItemGroup>
   <ItemGroup>

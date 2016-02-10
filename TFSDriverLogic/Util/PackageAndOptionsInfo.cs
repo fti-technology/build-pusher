@@ -18,6 +18,7 @@ namespace FTIPusher.Util
 
     public class FtpLocation : IFtpLocation
     {
+        public string FtpId { get; set; }
         public string FtpUrl { get; set; }
         public string FtpUser { get; set; }
         public string FtpPassWord { get; set; }
@@ -35,14 +36,22 @@ namespace FTIPusher.Util
         public List<string> FilterInclude { get; set; }
     }
 
-    public class MirrorList
+    public class FtpDestination : IFtpDestination
+    {
+        public string FtpId { get; set; }
+        public string FTPDirectory { get; set; }
+    }
+
+    public class MirrorList : IMirrorList
     {
         public string SourceDirectory { get; set; }
         public List<string> MirrorDestinations { get; set; }
+        public List<FtpDestination> FtpDestinations { get; set; }
     }
 
     public class ExternalMirror : IExternalMirror
     {
+
         public int UpdateFrequencyInMinutes { get; set; }
         public List<MirrorList> MirrorList { get; set; }
     }

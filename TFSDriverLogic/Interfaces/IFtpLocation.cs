@@ -8,6 +8,7 @@ namespace BuildDataDriver.Interfaces
 {
     public interface IFtpLocation
     {
+        string FtpId { get; set; }
         string FtpUrl { get; set; }
         string FtpUser { get; set; }
         string FtpPassWord { get; set; }

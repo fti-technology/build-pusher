@@ -16,6 +16,7 @@
   "FTPLocations": [
 
     {
+      "FtpID":  "FTP_HOST",
       "FtpUrl": "ftp-myhost.com",
       "FtpUser": "ftpUserName",
       "FtpPassWord": "myFtpP@ssword",
@@ -24,6 +25,7 @@
       "FTPDirectory": "/shared_drive/Builds/"
     },
     {
+      "FtpID": "InternalFTP",
       "FtpUrl": "someInternalFTPMachine",
       "FtpUser": "ftpupload",
       "FtpPassWord": "myFtpP@ssword",
@@ -53,7 +55,17 @@
     "MirrorList": [
       {
         "SourceDirectory": "D:\\somesource1",
-        "MirrorDestinations": [ "\\\\localhost\\TESTSHARE\\Builds2", "\\\\localhost\\TESTSHARE\\Builds3" ]
+        "MirrorDestinations": [ "\\\\localhost\\TESTSHARE\\Builds2", "\\\\localhost\\TESTSHARE\\Builds3" ],
+        "FtpDestinations": [
+          {
+            "ftpID": "FTP_HOST",
+            "FTPDirectory": "/shared_drive/Builds/TEMP"
+          },
+          {
+            "ftpID": "InternalFTP",
+            "FTPDirectory": "/Builds/TEMP"
+          }
+        ]
       },
       {
         "SourceDirectory": "E:\\somerource2",
