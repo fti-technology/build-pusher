@@ -16,7 +16,7 @@
   "FTPLocations": [
 
     {
-      "FtpID":  "FTP_HOST",
+      "FtpId":  "FTP_HOST",
       "FtpUrl": "ftp-myhost.com",
       "FtpUser": "ftpUserName",
       "FtpPassWord": "myFtpP@ssword",
@@ -25,7 +25,7 @@
       "FTPDirectory": "/shared_drive/Builds/"
     },
     {
-      "FtpID": "InternalFTP",
+      "FtpId": "InternalFTP",
       "FtpUrl": "someInternalFTPMachine",
       "FtpUser": "ftpupload",
       "FtpPassWord": "myFtpP@ssword",

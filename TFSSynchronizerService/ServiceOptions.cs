@@ -70,7 +70,6 @@ namespace FTIPusher
                 return false;
             }
 
-
             Parallel.ForEach(serviceOptions.ExternalMirror.MirrorList, mirrorLocation =>
             {
                 List<Task> tasks = new List<Task>();
@@ -79,18 +78,57 @@ namespace FTIPusher
                 TaskFactory factory = new TaskFactory(lcts);
                 _logger.Info("Processing Remote External Mirror : {0}", mirrorLocation.SourceDirectory);
 
-                DirectoryInfo di = new DirectoryInfo(mirrorLocation.SourceDirectory);
-                foreach (var mirrorDestination in mirrorLocation.MirrorDestinations)
+                if (mirrorLocation.MirrorDestinations != null)
                 {
-                    var destLocation = mirrorDestination;
-                    var soureLocation = di.FullName;
-                    Task t =
-                        factory.StartNew(
-                            () =>
+                    DirectoryInfo di = new DirectoryInfo(mirrorLocation.SourceDirectory);
+                    foreach (var mirrorDestination in mirrorLocation.MirrorDestinations)
+                    {
+                        
+                        var destLocation = mirrorDestination;
+                        var soureLocation = di.FullName;
+                        Task t =
+                            factory.StartNew(
+                                () =>
                                 FileUtils.MirrorDirectory(soureLocation, destLocation, _logger, 0, _dataBaseLogDirPath),
-                            CancellationToken.None,
-                            TaskCreationOptions.LongRunning, lcts);
-                    tasks.Add(t);
+                                CancellationToken.None,
+                                TaskCreationOptions.LongRunning,
+                                lcts);
+                        tasks.Add(t);
+                        _logger.Info("Mirror via File Copy - directory source: {0} - dest: {1}", soureLocation, destLocation);
+                    }
+
+                }
+
+                if (mirrorLocation.FtpDestinations != null)
+                {
+                    foreach (var ftpDestination in mirrorLocation.FtpDestinations)
+                    {
+                        var ftpLocation =serviceOptions.FTPLocations.Find(x => String.CompareOrdinal(x.FtpId, ftpDestination.FtpId) == 0);
+                        if (ftpLocation != null)
+                        {
+
+                            var currentTarget = ftpDestination;
+
+                            var ftpTarget = ftpLocation;
+                            FtpOperations ftpOperations = new FtpOperations(
+                                ftpTarget.FtpUser,
+                                ftpTarget.FtpPassWord,
+                                ftpTarget.FtpUrl,
+                                ftpTarget.FtpProxy,
+                                ftpTarget.FtpPort,
+                                _logger);
+
+                            Task t =
+                                factory.StartNew(
+                                    () =>
+                                    ftpOperations.MirrorDirectory(mirrorLocation.SourceDirectory, currentTarget.FTPDirectory, ftpTarget.FtpUrl),
+                                    CancellationToken.None,
+                                    TaskCreationOptions.LongRunning,
+                                    lcts);
+                            tasks.Add(t);
+                            _logger.Info("Mirror via FTP - directory source: {0} - Server: {1} - Folder: {2}", mirrorLocation.SourceDirectory, ftpTarget.FtpUrl, currentTarget.FTPDirectory);
+                        }
+                    }
                 }
 
                 _logger.Info("Location: {0} - Remote number of copies to perform for this item: {1}", mirrorLocation, tasks.Count);

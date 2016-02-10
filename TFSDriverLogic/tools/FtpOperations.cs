@@ -215,6 +215,11 @@ namespace BuildDataDriver.tools
             }
         }
 
+        public void MirrorDirectory(string source, string dest, string ServerName)
+        {
+            MirrorDirectory(source, dest, string.Empty, ServerName);
+        }
+
         /// <summary>
         /// Mirror local directory to remote FTP destination
         /// </summary>
@@ -226,7 +231,13 @@ namespace BuildDataDriver.tools
             DirectoryInfo dSource = new DirectoryInfo(source);
             DirectoryInfo dDest = new DirectoryInfo(dest);  
 
-            dest = dSource.ToString().Replace(sourceRoot, dDest.ToString());
+            if(!String.IsNullOrEmpty(sourceRoot))
+                dest = dSource.ToString().Replace(sourceRoot, dDest.ToString());
+            else
+            {
+                dest = dDest.ToString();
+            }
+
             dest = dest.Replace("\\", "//");
             dest = dest.Replace("//", "/");
 
