@@ -289,8 +289,10 @@ namespace BuildDataDriver.tools
                         {
                             foreach (var removal in synchronizationResult.Removals)
                             {
-                                    _logger.Info("Removed {0} - Guid: ", removal, guid);
-                                
+                                var re = removal as WinSCP.TransferEventArgs;
+
+                                _logger.Info("Removed {0} - Guid: ", re.FileName, guid);
+
                             }
                         }
                         catch (Exception){}
@@ -300,7 +302,8 @@ namespace BuildDataDriver.tools
                         {
                             foreach (var upload in synchronizationResult.Uploads)
                             {
-                                _logger.Info("Upload {0} - Guid: ", upload, guid);
+                                var up = upload as WinSCP.TransferEventArgs;
+                                _logger.Info("Upload Source: {0} - Dest: {1} - Guid: {2}", up.FileName, up.Destination, guid);
 
                             }
                         }
