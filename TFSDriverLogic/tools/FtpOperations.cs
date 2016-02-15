@@ -279,7 +279,7 @@ namespace BuildDataDriver.tools
                     Console.WriteLine(dest);
                     
                     SynchronizationResult synchronizationResult =
-                        session.SynchronizeDirectories(SynchronizationMode.Remote, source, dest, true, true, SynchronizationCriteria.Either, new TransferOptions { TransferMode = TransferMode.Automatic });
+                        session.SynchronizeDirectories(SynchronizationMode.Remote, source, dest, true, true, SynchronizationCriteria.Either, new TransferOptions { TransferMode = TransferMode.Automatic, PreserveTimestamp = true});
                     _logger.Info("FTP UPLOAD COMPLETE - SERVER $$$ {0} $$ {1} $$ Source: {2} - Dest: {3}", ServerName, guid, source, dest);
 
                     try
