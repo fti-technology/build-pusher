@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Components", "Components", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildDataDriverTest", "BuildDataDriverTest\BuildDataDriverTest.csproj", "{D5BFA64F-05EE-4116-844B-33A96BF50D01}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestDriver", "TestDriver\TestDriver.csproj", "{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,11 +76,24 @@ Global
 		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|x64.Build.0 = Release|Any CPU
 		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|x86.ActiveCfg = Release|Any CPU
 		{D5BFA64F-05EE-4116-844B-33A96BF50D01}.Release|x86.Build.0 = Release|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Debug|x64.Build.0 = Debug|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Debug|x86.Build.0 = Debug|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Release|x64.ActiveCfg = Release|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Release|x64.Build.0 = Release|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Release|x86.ActiveCfg = Release|Any CPU
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B5AB15C8-A361-484B-91ED-4EE7EA6AD01F} = {B35D4CC6-49F9-4DF9-9391-8CE3B0054B2D}
+		{AB293734-B2B6-452C-AB38-EF5E1A2B01F0} = {B35D4CC6-49F9-4DF9-9391-8CE3B0054B2D}
 	EndGlobalSection
 EndGlobal

@@ -52,7 +52,7 @@ namespace BuildDataDriver.tools
             public static string TargetBranch { get; set; }
 
             // See Note
-            public static List<string> TargetBuilds = new List<string> { "Ringtail8 Packages", "RPF Packages", "Main SQL Component", "DB Utility" };
+            public static List<string> TargetBuilds = new List<string> { "Ringtail8 Packages", "RPF Packages", "SQL Component", "DB Utility" };
             public static List<string> Manifest = new List<string>
             {
                 "RingtailDatabaseUtility_{BRANCH} DB Utility_",
