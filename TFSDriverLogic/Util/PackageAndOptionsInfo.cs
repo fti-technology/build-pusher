@@ -51,8 +51,8 @@ namespace FTIPusher.Util
 
     public class ExternalMirror : IExternalMirror
     {
-
         public int UpdateFrequencyInMinutes { get; set; }
+        public bool CreateSourceRootAtDestinations { get; set; }
         public List<MirrorList> MirrorList { get; set; }
     }
 

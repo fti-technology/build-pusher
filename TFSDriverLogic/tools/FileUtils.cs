@@ -458,12 +458,12 @@ namespace BuildDataDriver.tools
 
         }
 
-        public static void MirrorDirectory(string source, string dest, Logger logger, string logDir = null)
+        public static void MirrorDirectory(string source, string dest, Logger logger, bool createRootPath, string logDir = null)
         {
-            MirrorDirectory(source, dest, logger, 0, logDir);
+            MirrorDirectory(source, dest, logger, 0, createRootPath, logDir);
         }
 
-        public static void MirrorDirectory(string source, string dest, Logger logger, int failedRetryNumber, string logDir = null)
+        public static void MirrorDirectory(string source, string dest, Logger logger, int failedRetryNumber, bool createRootPath, string logDir = null)
         {
             const string exeName = "robocopy.exe";
             //robocopy "E:\test" \\server\public\test\ /MIR /W:20 /R:15 /LOG: \\server\public\logs 
@@ -480,18 +480,21 @@ namespace BuildDataDriver.tools
                 }
             }
 
-            // Check if paths end in same directory since robocopy doesn't copy the root/end of the path
-            if (Path.GetFileName(NormalizePath(source)) != Path.GetFileName(NormalizePath(dest)))
+            if (createRootPath)
             {
-                
-                try
+                // Check if paths end in same directory since robocopy doesn't copy the root/end of the path
+                if (Path.GetFileName(NormalizePath(source)) != Path.GetFileName(NormalizePath(dest)))
                 {
-                    dest = Path.Combine(dest, Path.GetFileName(NormalizePath(source)));
-                    Directory.CreateDirectory(dest);            
-                }
-                catch (Exception ex)
-                {
-                    logger.InfoException("Exception Creating directory : " + dest, ex);
+
+                    try
+                    {
+                        dest = Path.Combine(dest, Path.GetFileName(NormalizePath(source)));
+                        Directory.CreateDirectory(dest);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.InfoException("Exception Creating directory : " + dest, ex);
+                    }
                 }
             }
 

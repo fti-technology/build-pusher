@@ -10,6 +10,7 @@ namespace BuildDataDriver.Interfaces
     public interface IExternalMirror
     {
         int UpdateFrequencyInMinutes { get; set; }
+        bool CreateSourceRootAtDestinations { get; set; }
         List<MirrorList> MirrorList { get; set; }
     }
 }

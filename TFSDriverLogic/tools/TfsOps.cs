@@ -57,7 +57,7 @@ namespace BuildDataDriver.tools
             {
                 "RingtailDatabaseUtility_{BRANCH} DB Utility_",
                 "RingtailProcessingFrameworkWorkers_{BRANCH} RPF Packages_",
-                "RingtailSQLComponent(x64)_v_{BRANCH} SQL_Component_",
+                "RingtailSQLComponent(x64)_{BRANCH} SQL_Component_",
                 "RingtailProcessingFramework_{BRANCH} RPF Packages_",
                 "Ringtail_{BRANCH} Ringtail8 Packages_"
             };

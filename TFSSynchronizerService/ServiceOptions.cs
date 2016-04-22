@@ -89,7 +89,7 @@ namespace FTIPusher
                         Task t =
                             factory.StartNew(
                                 () =>
-                                FileUtils.MirrorDirectory(soureLocation, destLocation, _logger, 0, _dataBaseLogDirPath),
+                                FileUtils.MirrorDirectory(soureLocation, destLocation, _logger, 0, serviceOptions.ExternalMirror.CreateSourceRootAtDestinations, _dataBaseLogDirPath),
                                 CancellationToken.None,
                                 TaskCreationOptions.LongRunning,
                                 lcts);
@@ -269,7 +269,7 @@ namespace FTIPusher
                         factory.StartNew(
                             () =>
                                 FileUtils.MirrorDirectory(soureLocation, destLocation, _logger,
-                                    serviceOptions.MirrorRetryNumber, _dataBaseLogDirPath),
+                                    serviceOptions.MirrorRetryNumber, true, _dataBaseLogDirPath),
                             CancellationToken.None,
                             TaskCreationOptions.LongRunning, lcts);
                     tasks.Add(t);
